@@ -22,9 +22,14 @@ int main() {
         int64_t key = rand() % 10;
         R.tuples[i].key = key;
         R.tuples[i].payload = i;
+    	printf("%ld %ld\n",key , i );
     }
 
+
+
     SortMergeJoin(&R, &S);
+
+    free(R.tuples);
 
     return 0;
 }

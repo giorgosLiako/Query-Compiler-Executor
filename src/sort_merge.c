@@ -1,11 +1,12 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "structs.h"
 #include "result_list.h"
 #include "dbg.h"
 
 #define get_byte(num, byte) ( num >> ( (sizeof(num) << 3) - (byte << 3) ) & 0xFF)
 
-void build_histograms(relation *relR, relation *relS, histogram *histR, histogram *histS) {
+void build_histograms(relation *relR, relation *relS, histogram *histR, histogram *histS, int wanted_byte) {
 
     for (ssize_t i = 0 ; i < 256 ; i++) {
         histR->hist[i] = 0;
@@ -13,12 +14,12 @@ void build_histograms(relation *relR, relation *relS, histogram *histR, histogra
     }
 
     for (size_t i = 0 ; i < relR->num_tuples ; i++) {
-        uint32_t byte = get_byte(relR->tuples[i].key, 8);
+        uint32_t byte = get_byte(relR->tuples[i].key, wanted_byte);
         histR->hist[byte]++;
     }
 
     for (size_t i = 0 ; i < relS->num_tuples ; i++) {
-        uint32_t byte = get_byte(relS->tuples[i].key, 8);
+        uint32_t byte = get_byte(relS->tuples[i].key, wanted_byte);
         histS->hist[byte]++;
     }
 }
@@ -59,13 +60,68 @@ void build_psums(histogram *histR, histogram *histS, histogram *psumR, histogram
     }
 }
 
+
+relation * build_reordered_array(relation *rel, histogram* histo , histogram* psum, int wanted_byte )
+{
+    relation* r = NULL;
+
+    r = malloc(sizeof(relation));
+    if ( r == NULL)
+    {
+        printf("Kosta ftiakse macro gia debug\n");
+    }
+    r->num_tuples = rel->num_tuples;
+
+    r->tuples = malloc( rel->num_tuples *  sizeof(tuple));
+    if ( r->tuples  == NULL)
+    {
+        printf("Kosta ftiakse macro gia debug\n");
+    }
+
+    for (size_t i = 0 ; i < rel->num_tuples ; i++)
+        r->tuples[i].key = -1;
+
+    for (size_t i = 0 ; i < rel->num_tuples ; i++)
+    {
+        uint32_t byte = get_byte(rel->tuples[i].key, wanted_byte);
+
+        size_t start = psum->hist[byte];
+        size_t end = start + histo->hist[byte ] ; 
+        //printf("%ld %ld\n",start,end );
+        for (size_t j = start  ; j < end ; j++)
+        {
+            if ( r->tuples[j].key < 0)
+            {
+                r->tuples[j].key = rel->tuples[i].key;
+                r->tuples[j].payload = rel->tuples[i].payload;
+                break;
+            }
+        }
+
+    }
+
+    return r;
+}
+
+
+void free_reordered_array(relation* r , relation * s)
+{
+    free(r->tuples);
+    free(r);
+
+    free(s->tuples);
+    free(s);
+}
+
 result* SortMergeJoin(relation *relR, relation *relS) {
 
     histogram histR, histS;
 
     histogram psumR, psumS;
 
-    build_histograms(relR, relS, &histR, &histS);
+    int byte = 8;
+
+    build_histograms(relR, relS, &histR, &histS , byte);
 
     debug("AFTER BUILDING HISTOGRAMS");
 
@@ -82,6 +138,20 @@ result* SortMergeJoin(relation *relR, relation *relS) {
         if (psumR.hist[i] != -1)
           printf("%ld : %d\n", i, psumR.hist[i]); 
     }
+
+    relation * reorderedR = NULL;
+    relation * reorderedS = NULL;
+
+    reorderedR = build_reordered_array(relR , &histR , &psumR , byte);
+    reorderedS = build_reordered_array(relS , &histS , &psumS , byte);
+
+    debug("REORDERED ARRAY: ");
+    printf("KEY    ROW_ID\n");
+    for (size_t i = 0 ; i < reorderedR->num_tuples ; i++) {
+        printf("%ld\t%ld\n",reorderedR->tuples[i].key , reorderedR->tuples[i].payload );
+    }
+
+    free_reordered_array(reorderedR , reorderedS);
 
     return NULL;
 }
