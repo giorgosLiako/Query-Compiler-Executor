@@ -18,11 +18,13 @@ int main() {
 
     srand(time(NULL));
 
+    printf("ARAY: \nKEY\tROW_ID\n");
+
     for (size_t i = 0 ; i < 10 ; i++) {
         int64_t key = rand() % 10;
         R.tuples[i].key = key;
         R.tuples[i].payload = i;
-    	printf("%ld %ld\n",key , i );
+    	printf("%ld\t%ld\n",key , i );
     }
 
 
