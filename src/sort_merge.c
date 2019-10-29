@@ -61,10 +61,33 @@ void build_psums(histogram *histR, histogram *histS, histogram *psumR, histogram
 }
 
 
-relation * build_reordered_array(relation *rel, histogram* histo , histogram* psum, int wanted_byte )
+relation * build_reordered_array(relation* reorder_rel , relation *prev_rel, histogram* histo , histogram* psum, int wanted_byte )
 {
-    relation* r = NULL;
+    for (size_t i = 0 ; i < prev_rel->num_tuples ; i++)
+    {
+        uint32_t byte = get_byte(prev_rel->tuples[i].key, wanted_byte);
 
+        size_t start = psum->hist[byte];
+        size_t end = start + histo->hist[byte ] ; 
+
+        for (size_t j = start  ; j < end ; j++)
+        {
+            if ( reorder_rel->tuples[j].key < 0)
+            {
+                reorder_rel->tuples[j].key = prev_rel->tuples[i].key;
+                reorder_rel->tuples[j].payload = prev_rel->tuples[i].payload;
+                break;
+            }
+        }
+    }
+
+    return reorder_rel;
+}
+
+
+relation* allocate_reordered_array(relation* rel)
+{
+    relation *r = NULL;
     r = malloc(sizeof(relation));
     if ( r == NULL)
     {
@@ -76,33 +99,13 @@ relation * build_reordered_array(relation *rel, histogram* histo , histogram* ps
     if ( r->tuples  == NULL)
     {
         printf("Kosta ftiakse macro gia debug\n");
-    }
+    }    
 
     for (size_t i = 0 ; i < rel->num_tuples ; i++)
         r->tuples[i].key = -1;
 
-    for (size_t i = 0 ; i < rel->num_tuples ; i++)
-    {
-        uint32_t byte = get_byte(rel->tuples[i].key, wanted_byte);
-
-        size_t start = psum->hist[byte];
-        size_t end = start + histo->hist[byte ] ; 
-        //printf("%ld %ld\n",start,end );
-        for (size_t j = start  ; j < end ; j++)
-        {
-            if ( r->tuples[j].key < 0)
-            {
-                r->tuples[j].key = rel->tuples[i].key;
-                r->tuples[j].payload = rel->tuples[i].payload;
-                break;
-            }
-        }
-
-    }
-
     return r;
 }
-
 
 void free_reordered_array(relation* r , relation * s)
 {
@@ -142,8 +145,11 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     relation * reorderedR = NULL;
     relation * reorderedS = NULL;
 
-    reorderedR = build_reordered_array(relR , &histR , &psumR , byte);
-    reorderedS = build_reordered_array(relS , &histS , &psumS , byte);
+    reorderedR = allocate_reordered_array(relR);
+    reorderedS = allocate_reordered_array(relS);
+
+    reorderedR = build_reordered_array(reorderedR,relR , &histR , &psumR , byte);
+    reorderedS = build_reordered_array(reorderedS,relS , &histS , &psumS , byte);
 
     debug("REORDERED ARRAY: ");
     printf("KEY    ROW_ID\n");
