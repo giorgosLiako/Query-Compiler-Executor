@@ -31,32 +31,22 @@ void build_psums(histogram *histR, histogram *histS, histogram *psumR, histogram
         psumS->hist[i] = -1;
     }
 
-    int32_t non_zeroR[256];
-
-    size_t j = 0;
-    for (size_t i = 0 ; i < 256 ; i++) {
+    size_t offset = 0, j = 0;
+    for (size_t i = 0; i < 256; i++) {
         if (histR->hist[i] != 0) {
-            non_zeroR[j++] = i;
+            psumR->hist[j] = offset;
+            offset +=  histR->hist[i];
         }
+        j++;
     }
 
-    psumR->hist[non_zeroR[0]] = 0;
-    for (size_t i = 1 ; i < j ; i++) {
-        psumR->hist[non_zeroR[i]] = psumR->hist[non_zeroR[i - 1]] + histR->hist[non_zeroR[i - 1]];
-    }
-
-    int32_t non_zeroS[256];
-
-    j = 0;
-    for (size_t i = 0 ; i < 256 ; i++) {
+    offset = 0, j = 0;
+    for (size_t i = 0; i < 256; i++) {
         if (histS->hist[i] != 0) {
-            non_zeroS[j++] = i;
+            psumS->hist[j] = offset;
+            offset +=  histS->hist[i];
         }
-    }
-
-    psumS->hist[non_zeroS[0]] = 0;
-    for (size_t i = 1 ; i < j ; i++) {
-        psumS->hist[non_zeroS[i]] = psumS->hist[non_zeroS[i - 1]] + histS->hist[non_zeroR[i - 1]];
+        j++;
     }
 }
 
