@@ -11,26 +11,26 @@
 void build_histogram(relation *rel, histogram *hist, int wanted_byte) {
 
     for (ssize_t i = 0 ; i < 256 ; i++) {
-        hist->hist[i] = 0;
+        hist->array[i] = 0;
     }
 
     for (size_t i = 0 ; i < rel->num_tuples ; i++) {
         uint32_t byte = get_byte(rel->tuples[i].key, wanted_byte);
-        hist->hist[byte]++;
+        hist->array[byte]++;
     }
 }
 
 void build_psum(histogram *hist, histogram *psum) {
 
     for (size_t i =  0 ; i < 256 ; i++) {
-        psum->hist[i] = -1;
+        psum->array[i] = -1;
     }
 
     size_t offset = 0;
     for (size_t i = 0; i < 256; i++) {
-        if (hist->hist[i] != 0) {
-            psum->hist[i] = offset;
-            offset +=  hist->hist[i];
+        if (hist->array[i] != 0) {
+            psum->array[i] = offset;
+            offset +=  hist->array[i];
         }
     }
 
@@ -47,9 +47,9 @@ relation* build_reordered_array(relation* reorder_rel , relation *prev_rel,
     for (size_t i = 0 ; i < prev_rel->num_tuples ; i++) {
         uint32_t byte = get_byte(prev_rel->tuples[i].key, wanted_byte);
 
-        size_t index = psum->hist[byte] + (histo->hist[byte] - temp.hist[byte]);
+        size_t index = psum->array[byte] + (histo->array[byte] - temp.array[byte]);
 
-        temp.hist[byte]--;    
+        temp.array[byte]--;    
 
         reorder_rel->tuples[index].key = prev_rel->tuples[i].key;
         reorder_rel->tuples[index].payload = prev_rel->tuples[i].payload;
@@ -80,14 +80,58 @@ void free_reordered_array(relation* r) {
     FREE(r);
 }
 
-result* SortMergeJoin(relation *relR, relation *relS) {
+int cmpfunc (const void * a, const void * b) {
+   tuple t1 = *(tuple *) a;
+   tuple t2 = *(tuple *) b;
 
-    int byte = 1;
+   return t1.key - t2.key; 
+}
+
+void copy(relation *relR, relation *reorderedR, int start, int num) {
+
+    for (ssize_t i = start ;  i < num ; i++) {
+        relR[i] = reorderedR[i];
+    }
+}
+
+
+void recursive_sort(relation *relR, relation *reorderedR, int byte) {
+
+    histogram hist, psum;
+    build_histogram(relR, &hist, byte);
+    build_psum(&hist, &psum);
+    
+    for (size_t i = 0 ; i < 256 ; i++) {
+        if (hist.array[i] > 0 && hist.array[i] < 4) {
+            recursive_sort(reorderedR, relR, ++byte);
+        } 
+        else {
+            qsort(reorderedR->tuples, reorderedR->num_tuples, sizeof(tuple), cmpfunc);
+            copy(relR, reorderedR, psum.array[i], hist.array[i]);
+        } 
+    }
+}
+
+result* SortMergeJoin(relation *relR, relation *relS) {
 
     relation *reorderedR = NULL;
 
     reorderedR = allocate_reordered_array(relR);
 
+    recursive_sort(relR, reorderedR, 1);
+
+    free_reordered_array(reorderedR);
+}
+
+
+
+
+
+
+
+
+
+/*
     stack_node s_node;
 
     DArray *stack = DArray_create(sizeof(stack_node), 25);
@@ -105,13 +149,10 @@ result* SortMergeJoin(relation *relR, relation *relS) {
         build_psum(s_node.hist, s_node.psum);
 
         reorderedR = build_reordered_array(reorderedR, relR , s_node.hist, s_node.psum, byte);
-    }
+    } */
 
-    free_reordered_array(reorderedR);
-    
-    error:
+    /*error:
         free_reordered_array(reorderedR);
         FREE(s_node.hist);
         FREE(s_node.psum);
-        return NULL;    
-}
+        return NULL;  */  
