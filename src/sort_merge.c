@@ -9,7 +9,7 @@
 
 void build_histogram(relation *rel, histogram *hist, int wanted_byte) {
 
-    for (size_t i = 0 ; i < 256 ; i++) {
+    for (ssize_t i = 0 ; i < 256 ; i++) {
         hist->hist[i] = 0;
     }
 
@@ -38,24 +38,23 @@ void build_psum(histogram *hist, histogram *psum) {
 
 relation* build_reordered_array(relation* reorder_rel , relation *prev_rel, histogram* histo , histogram* psum, int wanted_byte )
 {
-    size_t j = 0;
-    histogram temp = *histo;
-    
-    
     for (size_t i = 0 ; i < prev_rel->num_tuples ; i++)
     {
-        uint32_t byte = get_byte(prev_rel->tuples[i].key, 8);
+        uint32_t byte = get_byte(prev_rel->tuples[i].key, wanted_byte);
 
-        size_t index = psum->hist[byte] + (histo->hist[byte] - temp.hist[byte]);
-        //printf("->%d %d %d \n", psum->hist[byte] , histo->hist[byte] , temp.hist[byte]);
-        temp.hist[byte]--;    
+        size_t start = psum->hist[byte];
+        size_t end = start + histo->hist[byte] ; 
 
-        reorder_rel->tuples[index].key = prev_rel->tuples[i].key;
-        reorder_rel->tuples[index].payload = prev_rel->tuples[i].payload;
-               
-            
-        
-
+        for (size_t j = start ; j < end ; j++)
+        {
+            if (reorder_rel->tuples[j].payload == prev_rel->num_tuples + 1)
+            {
+                reorder_rel->tuples[j].key = prev_rel->tuples[i].key;
+                reorder_rel->tuples[j].payload = prev_rel->tuples[i].payload;
+                
+                break;
+            }
+        }
     }
 
     return reorder_rel;
@@ -93,7 +92,7 @@ result* SortMergeJoin(relation *relR, relation *relS) {
 
     histogram psumR, psumS;
 
-    int byte = 8;
+    int byte = 1;
 
     relation *reorderedR = NULL;
     relation *reorderedS = NULL;
