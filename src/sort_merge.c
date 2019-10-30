@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "alloc_free.h"
 #include "structs.h"
 #include "result_list.h"
 #include "dbg.h"
@@ -62,11 +63,11 @@ relation * build_reordered_array(relation* reorder_rel , relation *prev_rel, his
 relation* allocate_reordered_array(relation* rel)
 {
     relation *r = NULL;
-    r = malloc(sizeof(relation));
+    r = MALLOC(relation, 1);
     check_mem(r);
 
     r->num_tuples = rel->num_tuples;
-    r->tuples = malloc( rel->num_tuples *  sizeof(tuple));
+    r->tuples = MALLOC(tuple, rel->num_tuples);
     check_mem(r->tuples);
 
     for (size_t i = 0 ; i < rel->num_tuples ; i++)
@@ -78,13 +79,10 @@ relation* allocate_reordered_array(relation* rel)
         return NULL;
 }
 
-void free_reordered_array(relation* r , relation * s)
+void free_reordered_array(relation* r)
 {
-    free(r->tuples);
-    free(r);
-
-    free(s->tuples);
-    free(s);
+    FREE(r->tuples);
+    FREE(r);
 }
 
 result* SortMergeJoin(relation *relR, relation *relS) {
@@ -111,7 +109,8 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     reorderedS = build_reordered_array(reorderedS,relS , &histS , &psumS , byte);
 
     
-    free_reordered_array(reorderedR , reorderedS);
+    free_reordered_array(reorderedR);
+    free_reordered_array(reorderedS);
 
     return NULL;
 }

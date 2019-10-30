@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
+#include "../src/alloc_free.h"
 #include "../src/sort_merge.h"
 #include "../src/structs.h"
 #include "../src/dbg.h"
@@ -12,33 +13,30 @@ int main() {
     relation R;
     relation S;
 
-    S.num_tuples = 0;
-    
-    
-    
-    R.tuples = malloc(sizeof(tuple) * 10);
-    check_mem(R.tuples);
-    R.num_tuples = 10;
+    R.num_tuples = 100;
+    R.tuples = MALLOC(tuple, R.num_tuples);
+
+    S.num_tuples = 100;
+    S.tuples = MALLOC(tuple, S.num_tuples);
 
     srand(328398329);
 
-    printf("ARAY: \nKEY\tROW_ID\n");
+    log_info("ARRAY: KEY\tROW_ID\n");
 
-    for (size_t i = 0 ; i < 10 ; i++) {
+    for (size_t i = 0 ; i < 100 ; i++) {
         uint64_t key = 0;
         for (int j=0; j<64; j++) {
             key = key*2 + rand()%2;
         }
         R.tuples[i].key = key;
         R.tuples[i].payload = i;
-    	printf("%ld\t%ld\n",key , i );
+    	log_info("%ld\t%ld\n",key , i );
     }
-
-
 
     SortMergeJoin(&R, &S);
 
-    free(R.tuples);
+    FREE(R.tuples);
+    FREE(S.tuples);
 
     return 0;
 }
