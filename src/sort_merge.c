@@ -79,17 +79,11 @@ relation* allocate_reordered_array(relation* rel)
 {
     relation *r = NULL;
     r = malloc(sizeof(relation));
-    if ( r == NULL)
-    {
-        printf("Kosta ftiakse macro gia debug\n");
-    }
-    r->num_tuples = rel->num_tuples;
+    check_mem(r);
 
+    r->num_tuples = rel->num_tuples;
     r->tuples = malloc( rel->num_tuples *  sizeof(tuple));
-    if ( r->tuples  == NULL)
-    {
-        printf("Kosta ftiakse macro gia debug\n");
-    }    
+    check_mem(r->tuples);
 
     for (size_t i = 0 ; i < rel->num_tuples ; i++)
         r->tuples[i].key = -1;
@@ -142,7 +136,7 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     reorderedS = build_reordered_array(reorderedS,relS , &histS , &psumS , byte);
 
     debug("REORDERED ARRAY: ");
-    printf("KEY    ROW_ID\n");
+    debug("KEY    ROW_ID\n");
     for (size_t i = 0 ; i < reorderedR->num_tuples ; i++) {
         printf("%ld\t%ld\n",reorderedR->tuples[i].key , reorderedR->tuples[i].payload );
     }
