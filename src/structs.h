@@ -18,4 +18,9 @@ typedef struct histogram {
     int32_t hist[256];
 } histogram;
 
+typedef struct stack_node {
+    histogram *hist;
+    histogram *psum;
+} stack_node;
+
 #endif
