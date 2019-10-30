@@ -94,6 +94,12 @@ result* SortMergeJoin(relation *relR, relation *relS) {
 
     int byte = 1;
 
+    relation *reorderedR = NULL;
+    relation *reorderedS = NULL;
+
+    reorderedR = allocate_reordered_array(relR);
+    reorderedS = allocate_reordered_array(relS);
+
     build_histogram(relR, &histR, byte);
     build_histogram(relS, &histS, byte); 
 
@@ -115,12 +121,6 @@ result* SortMergeJoin(relation *relR, relation *relS) {
             printf("%lu %d\n", i, psumR.hist[i]);
         }
     }
-
-    relation * reorderedR = NULL;
-    relation * reorderedS = NULL;
-
-    reorderedR = allocate_reordered_array(relR);
-    reorderedS = allocate_reordered_array(relS);
 
     reorderedR = build_reordered_array(reorderedR,relR , &histR , &psumR , byte);
     reorderedS = build_reordered_array(reorderedS,relS , &histS , &psumS , byte);

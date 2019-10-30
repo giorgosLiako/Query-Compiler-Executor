@@ -35,7 +35,7 @@ int main() {
     } */
 
     for (size_t i = 0 ; i < 10 ; i++) {
-        uint64_t key = rand() % 100;
+        uint64_t key = rand() % 10;
         R.tuples[i].key = key;
         R.tuples[i].payload = i;
         printf("%lu\t%lu\n", key, i);
