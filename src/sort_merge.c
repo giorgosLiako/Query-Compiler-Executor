@@ -51,6 +51,7 @@ relation* build_reordered_array(relation* reorder_rel , relation *prev_rel, hist
             {
                 reorder_rel->tuples[j].key = prev_rel->tuples[i].key;
                 reorder_rel->tuples[j].payload = prev_rel->tuples[i].payload;
+                
                 break;
             }
         }
