@@ -36,33 +36,31 @@ void build_psum(histogram *hist, histogram *psum) {
 }
 
 
-relation* build_reordered_array(relation* reorder_rel , relation *prev_rel, histogram* histo , histogram* psum, int wanted_byte )
-{
-    for (size_t i = 0 ; i < prev_rel->num_tuples ; i++)
-    {
+relation* build_reordered_array(relation* reorder_rel , relation *prev_rel, 
+                                histogram* histo , histogram* psum, 
+                                int wanted_byte ) {
+   
+    size_t j = 0;
+    histogram temp = *histo;
+    
+    
+    for (size_t i = 0 ; i < prev_rel->num_tuples ; i++) {
         uint32_t byte = get_byte(prev_rel->tuples[i].key, wanted_byte);
 
-        size_t start = psum->hist[byte];
-        size_t end = start + histo->hist[byte] ; 
+        size_t index = psum->hist[byte] + (histo->hist[byte] - temp.hist[byte]);
 
-        for (size_t j = start ; j < end ; j++)
-        {
-            if (reorder_rel->tuples[j].payload == prev_rel->num_tuples + 1)
-            {
-                reorder_rel->tuples[j].key = prev_rel->tuples[i].key;
-                reorder_rel->tuples[j].payload = prev_rel->tuples[i].payload;
-                
-                break;
-            }
-        }
+        temp.hist[byte]--;    
+
+        reorder_rel->tuples[index].key = prev_rel->tuples[i].key;
+        reorder_rel->tuples[index].payload = prev_rel->tuples[i].payload;
     }
 
     return reorder_rel;
 }
 
 
-relation* allocate_reordered_array(relation* rel)
-{
+relation* allocate_reordered_array(relation* rel) {
+    
     relation *r = NULL;
     r = MALLOC(relation, 1);
     check_mem(r);
@@ -71,17 +69,13 @@ relation* allocate_reordered_array(relation* rel)
     r->tuples = MALLOC(tuple, rel->num_tuples);
     check_mem(r->tuples);
 
-    for (size_t i = 0 ; i < rel->num_tuples ; i++)
-        r->tuples[i].payload = rel->num_tuples + 1;         //num_tuples + 1 means that this cell is empty because payload = num_tuples + 1 is invalid
-
     return r;
 
     error:
         return NULL;
 }
 
-void free_reordered_array(relation* r)
-{
+void free_reordered_array(relation* r) {
     FREE(r->tuples);
     FREE(r);
 }
