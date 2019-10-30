@@ -4,6 +4,7 @@
 #include <time.h>
 #include "../src/sort_merge.h"
 #include "../src/structs.h"
+#include "../src/dbg.h"
 
 
 int main() {
@@ -14,20 +15,8 @@ int main() {
     S.num_tuples = 0;
     
     R.tuples = malloc(sizeof(tuple) * 10);
+    check_mem(R.tuples);
     R.num_tuples = 10;
-
-    srand(328398329);
-
-    printf("ARAY: \nKEY\tROW_ID\n");
-
-    for (size_t i = 0 ; i < 10 ; i++) {
-        int64_t key = rand() % 10;
-        R.tuples[i].key = key;
-        R.tuples[i].payload = i;
-    	printf("%ld\t%ld\n",key , i );
-    }
-
-
 
     SortMergeJoin(&R, &S);
 
