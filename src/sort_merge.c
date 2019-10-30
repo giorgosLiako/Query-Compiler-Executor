@@ -40,9 +40,8 @@ relation* build_reordered_array(relation* reorder_rel , relation *prev_rel,
                                 histogram* histo , histogram* psum, 
                                 int wanted_byte ) {
    
-    size_t j = 0;
     histogram temp = *histo;
-    
+
     
     for (size_t i = 0 ; i < prev_rel->num_tuples ; i++) {
         uint32_t byte = get_byte(prev_rel->tuples[i].key, wanted_byte);
@@ -82,20 +81,17 @@ void free_reordered_array(relation* r) {
 
 result* SortMergeJoin(relation *relR, relation *relS) {
 
-    histogram histR, histS;
+    histogram histR;
 
-    histogram psumR, psumS;
+    histogram psumR;
 
     int byte = 1;
 
     relation *reorderedR = NULL;
-    relation *reorderedS = NULL;
 
     reorderedR = allocate_reordered_array(relR);
-    reorderedS = allocate_reordered_array(relS);
 
     build_histogram(relR, &histR, byte);
-    build_histogram(relS, &histS, byte); 
 
     log_info("Histogram");
 
@@ -106,7 +102,6 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     }
 
     build_psum(&histR, &psumR);
-    build_psum(&histS, &psumS);
 
     log_info("Psum");
 
@@ -117,7 +112,6 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     }
 
     reorderedR = build_reordered_array(reorderedR,relR , &histR , &psumR , byte);
-    reorderedS = build_reordered_array(reorderedS,relS , &histS , &psumS , byte);
 
     log_info("AFTER REORDERED");
 
@@ -126,7 +120,5 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     }
 
     free_reordered_array(reorderedR);
-    free_reordered_array(reorderedS);
-
     return NULL;
 }
