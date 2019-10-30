@@ -15,8 +15,9 @@ typedef struct relation {
 
 
 typedef struct histogram {
-    int32_t hist[256];
+    int32_t array[256];
 } histogram;
+
 
 typedef struct stack_node {
     histogram *hist;
