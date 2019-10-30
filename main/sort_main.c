@@ -13,6 +13,8 @@ int main() {
 
     S.num_tuples = 0;
     
+    
+    
     R.tuples = malloc(sizeof(tuple) * 10);
     R.num_tuples = 10;
 
@@ -21,7 +23,10 @@ int main() {
     printf("ARAY: \nKEY\tROW_ID\n");
 
     for (size_t i = 0 ; i < 10 ; i++) {
-        int64_t key = rand() % 10;
+        uint64_t key = 0;
+        for (int j=0; j<64; j++) {
+            key = key*2 + rand()%2;
+        }
         R.tuples[i].key = key;
         R.tuples[i].payload = i;
     	printf("%ld\t%ld\n",key , i );
