@@ -13,24 +13,33 @@ int main() {
     relation R;
     relation S;
 
-    R.num_tuples = 100;
+    R.num_tuples = 10;
     R.tuples = MALLOC(tuple, R.num_tuples);
 
-    S.num_tuples = 100;
+    S.num_tuples = 10;
     S.tuples = MALLOC(tuple, S.num_tuples);
 
     srand(328398329);
 
     log_info("ARRAY: KEY\tROW_ID\n");
 
-    for (size_t i = 0 ; i < 100 ; i++) {
+    /*for (size_t i = 0 ; i < 100 ; i++) {
         uint64_t key = 0;
         for (int j=0; j<64; j++) {
             key = key*2 + rand()%2;
         }
         R.tuples[i].key = key;
         R.tuples[i].payload = i;
-    	log_info("%lu\t%ld\n",key , i );
+
+    	log_info("%lu\t%lu\n",key , i );
+    } */
+
+    for (size_t i = 0 ; i < 10 ; i++) {
+        uint64_t key = rand() % 100;
+        R.tuples[i].key = key;
+        R.tuples[i].payload = i;
+        printf("%lu\t%lu\n", key, i);
+
     }
 
     SortMergeJoin(&R, &S);
