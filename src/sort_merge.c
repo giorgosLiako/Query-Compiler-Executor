@@ -108,7 +108,6 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     reorderedR = build_reordered_array(reorderedR,relR , &histR , &psumR , byte);
     reorderedS = build_reordered_array(reorderedS,relS , &histS , &psumS , byte);
 
-    
     free_reordered_array(reorderedR);
     free_reordered_array(reorderedS);
 
