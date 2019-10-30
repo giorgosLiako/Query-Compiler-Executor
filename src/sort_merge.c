@@ -88,35 +88,30 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     int byte = 1;
 
     relation *reorderedR = NULL;
+    relation *temp = NULL;
 
     reorderedR = allocate_reordered_array(relR);
-
+    
     build_histogram(relR, &histR, byte);
-
-    log_info("Histogram");
-
-    for (size_t i = 0 ; i < 256 ; i++) {
-        if (histR.hist[i] != 0) {
-            printf("%lu %d\n", i, histR.hist[i]);
-        }
-    }
 
     build_psum(&histR, &psumR);
 
-    log_info("Psum");
-
-    for (size_t i = 0 ; i < 256 ; i++) {
-        if (psumR.hist[i] != -1) {
-            printf("%lu %d\n", i, psumR.hist[i]);
-        }
-    }
-
     reorderedR = build_reordered_array(reorderedR,relR , &histR , &psumR , byte);
+    
+    temp = relR;
+    relR = reorderedR;
+    reorderedR = relR;
 
-    log_info("AFTER REORDERED");
+    while(1)
+    {
+        for(size_t i = 0 ; i <= 255 ; i++ )
+        {
+            if ( histR->hist[i] == 0)
+                continue;
 
-    for (size_t i = 0 ; i < reorderedR->num_tuples ; i++) {
-        printf("%lu\t%lu\n", reorderedR->tuples[i].key, reorderedR->tuples[i].payload);
+            
+
+        }
     }
 
     free_reordered_array(reorderedR);
