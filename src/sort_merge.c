@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "alloc_free.h"
+#include "DArray.h"
 #include "structs.h"
 #include "result_list.h"
 #include "dbg.h"
@@ -81,44 +82,36 @@ void free_reordered_array(relation* r) {
 
 result* SortMergeJoin(relation *relR, relation *relS) {
 
-    histogram histR;
-
-    histogram psumR;
-
     int byte = 1;
 
     relation *reorderedR = NULL;
 
     reorderedR = allocate_reordered_array(relR);
 
-    build_histogram(relR, &histR, byte);
+    stack_node s_node;
 
-    log_info("Histogram");
+    DArray *stack = DArray_create(sizeof(stack_node), 25);
 
-    for (size_t i = 0 ; i < 256 ; i++) {
-        if (histR.hist[i] != 0) {
-            printf("%lu %d\n", i, histR.hist[i]);
-        }
-    }
+    while (1) {
 
-    build_psum(&histR, &psumR);
+        s_node.hist = MALLOC(histogram, 1);
+        check_mem(s_node.hist);
+        s_node.psum = MALLOC(histogram, 1);
+        check_mem(s_node.psum);
 
-    log_info("Psum");
+        DArray_push(stack, &s_node);
 
-    for (size_t i = 0 ; i < 256 ; i++) {
-        if (psumR.hist[i] != -1) {
-            printf("%lu %d\n", i, psumR.hist[i]);
-        }
-    }
+        build_histogram(relR, s_node.hist, byte);
+        build_psum(s_node.hist, s_node.psum);
 
-    reorderedR = build_reordered_array(reorderedR,relR , &histR , &psumR , byte);
-
-    log_info("AFTER REORDERED");
-
-    for (size_t i = 0 ; i < reorderedR->num_tuples ; i++) {
-        printf("%lu\t%lu\n", reorderedR->tuples[i].key, reorderedR->tuples[i].payload);
+        reorderedR = build_reordered_array(reorderedR, relR , s_node.hist, s_node.psum, byte);
     }
 
     free_reordered_array(reorderedR);
-    return NULL;
+    
+    error:
+        free_reordered_array(reorderedR);
+        FREE(s_node.hist);
+        FREE(s_node.psum);
+        return NULL;    
 }
