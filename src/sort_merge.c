@@ -6,48 +6,32 @@
 
 #define get_byte(num, byte) ( num >> ( (sizeof(num) << 3) - (byte << 3) ) & 0xFF)
 
-void build_histograms(relation *relR, relation *relS, histogram *histR, histogram *histS, int wanted_byte) {
+void build_histogram(relation *rel, histogram *hist, int wanted_byte) {
 
     for (ssize_t i = 0 ; i < 256 ; i++) {
-        histR->hist[i] = 0;
-        histS->hist[i] = 0;
+        hist->hist[i] = 0;
     }
 
-    for (size_t i = 0 ; i < relR->num_tuples ; i++) {
-        uint32_t byte = get_byte(relR->tuples[i].key, wanted_byte);
-        histR->hist[byte]++;
-    }
-
-    for (size_t i = 0 ; i < relS->num_tuples ; i++) {
-        uint32_t byte = get_byte(relS->tuples[i].key, wanted_byte);
-        histS->hist[byte]++;
+    for (size_t i = 0 ; i < rel->num_tuples ; i++) {
+        uint32_t byte = get_byte(rel->tuples[i].key, wanted_byte);
+        hist->hist[byte]++;
     }
 }
 
-void build_psums(histogram *histR, histogram *histS, histogram *psumR, histogram *psumS) {
+void build_psum(histogram *hist, histogram *psum) {
 
     for (size_t i =  0 ; i < 256 ; i++) {
-        psumR->hist[i] = -1;
-        psumS->hist[i] = -1;
+        psum->hist[i] = -1;
     }
 
-    size_t offset = 0, j = 0;
+    size_t offset = 0;
     for (size_t i = 0; i < 256; i++) {
-        if (histR->hist[i] != 0) {
-            psumR->hist[j] = offset;
-            offset +=  histR->hist[i];
+        if (hist->hist[i] != 0) {
+            psum->hist[i] = offset;
+            offset +=  hist->hist[i];
         }
-        j++;
     }
 
-    offset = 0, j = 0;
-    for (size_t i = 0; i < 256; i++) {
-        if (histS->hist[i] != 0) {
-            psumS->hist[j] = offset;
-            offset +=  histS->hist[i];
-        }
-        j++;
-    }
 }
 
 
@@ -89,6 +73,9 @@ relation* allocate_reordered_array(relation* rel)
         r->tuples[i].key = -1;
 
     return r;
+
+    error:
+        return NULL;
 }
 
 void free_reordered_array(relation* r , relation * s)
@@ -108,7 +95,8 @@ result* SortMergeJoin(relation *relR, relation *relS) {
 
     int byte = 8;
 
-    build_histograms(relR, relS, &histR, &histS , byte);
+    build_histogram(relR, &histR, byte);
+    build_histogram(relS, &histS, byte); 
 
     debug("AFTER BUILDING HISTOGRAMS");
 
@@ -117,7 +105,8 @@ result* SortMergeJoin(relation *relR, relation *relS) {
             printf("%ld : %d\n", i, histR.hist[i]);
     }
 
-    build_psums(&histR, &histS, &psumR, &psumS);
+    build_psum(&histR, &psumR);
+    build_psum(&histS, &psumS);
 
     debug("AFTER BUILDING PSUMS");
 

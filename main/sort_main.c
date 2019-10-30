@@ -16,7 +16,7 @@ int main() {
     R.tuples = malloc(sizeof(tuple) * 10);
     R.num_tuples = 10;
 
-    srand(time(NULL));
+    srand(328398329);
 
     printf("ARAY: \nKEY\tROW_ID\n");
 
