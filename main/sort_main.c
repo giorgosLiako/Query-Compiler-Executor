@@ -30,6 +30,7 @@ int main() {
         }
         R.tuples[i].key = key;
         R.tuples[i].payload = i;
+
     	log_info("%lu\t%lu\n",key , i );
     } */
 
@@ -38,6 +39,7 @@ int main() {
         R.tuples[i].key = key;
         R.tuples[i].payload = i;
         printf("%lu\t%lu\n", key, i);
+
     }
 
     SortMergeJoin(&R, &S);
