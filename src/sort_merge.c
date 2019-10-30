@@ -96,8 +96,24 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     build_histogram(relR, &histR, byte);
     build_histogram(relS, &histS, byte); 
 
+    log_info("Histogram");
+
+    for (size_t i = 0 ; i < 256 ; i++) {
+        if (histR.hist[i] != 0) {
+            printf("%lu %d\n", i, histR.hist[i]);
+        }
+    }
+
     build_psum(&histR, &psumR);
     build_psum(&histS, &psumS);
+
+    log_info("Psum");
+
+    for (size_t i = 0 ; i < 256 ; i++) {
+        if (psumR.hist[i] != -1) {
+            printf("%lu %d\n", i, psumR.hist[i]);
+        }
+    }
 
     relation * reorderedR = NULL;
     relation * reorderedS = NULL;
@@ -107,6 +123,12 @@ result* SortMergeJoin(relation *relR, relation *relS) {
 
     reorderedR = build_reordered_array(reorderedR,relR , &histR , &psumR , byte);
     reorderedS = build_reordered_array(reorderedS,relS , &histS , &psumS , byte);
+
+    log_info("AFTER REORDERED");
+
+    for (size_t i = 0 ; i < reorderedR->num_tuples ; i++) {
+        printf("%lu\t%lu\n", reorderedR->tuples[i].key, reorderedR->tuples[i].payload);
+    }
 
     free_reordered_array(reorderedR);
     free_reordered_array(reorderedS);
