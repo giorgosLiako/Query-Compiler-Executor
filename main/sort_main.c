@@ -13,7 +13,7 @@ int main() {
     relation R;
     relation S;
 
-    R.num_tuples = 50000;
+    R.num_tuples = 50;
     R.tuples = MALLOC(tuple, R.num_tuples);
 
     S.num_tuples = 10;
@@ -21,7 +21,7 @@ int main() {
 
     srand(32839832);
 
-    log_info("ARRAY: KEY\tROW_ID\n");
+  //  log_info("ARRAY: KEY\tROW_ID\n");
 
     for (size_t i = 0 ; i < R.num_tuples ; i++) {
        /* uint64_t key = 0;

@@ -20,6 +20,11 @@ typedef struct histogram {
 
 
 typedef struct stack_node {
+    relation *relR;
+    relation *reorderedR;
+    uint8_t current_byte;
+    uint32_t size;
+    uint32_t start;
     histogram *hist;
     histogram *psum;
 } stack_node;
