@@ -48,7 +48,7 @@ relation* build_reordered_array(relation* reorder_rel , relation *prev_rel,
     for (size_t i = start ; i < start + size ; i++) {
         uint32_t byte = get_byte(prev_rel->tuples[i].key, wanted_byte);
 
-        size_t index = base + psum->array[byte] + (histo->array[byte] - temp.array[byte]);
+        size_t index = start + psum->array[byte] + (histo->array[byte] - temp.array[byte]);
 
         temp.array[byte]--;    
 
@@ -102,10 +102,10 @@ void recursive_sort(relation *relR, relation *reorderedR, int byte, int start, i
     build_psum(&hist, &psum);
     reorderedR = build_reordered_array(reorderedR, relR, &hist, &psum, byte, start, size, base);
 
-    log_info("\n ->%d %d %d\n", byte, start, size);
-    for (size_t i = 0; i < 256; i++) {
-        if (hist.array[i] != 0) log_info("%d %d %d\n", i, hist.array[i], psum.array[i]);
-    }
+    // log_info("\n ->%d %d %d\n", byte, start, size);
+    // for (size_t i = 0; i < 256; i++) {
+    //     if (hist.array[i] != 0) log_info("%d %d %d\n", i, hist.array[i], psum.array[i]);
+    // }
     
 
     for (size_t i = 0 ; i < 256 ; i++) {

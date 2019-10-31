@@ -28,7 +28,7 @@ int main() {
         for (int j=0; j<64; j++) {
             key = key*2 + rand()%2;
         }*/
-        uint64_t key = rand() % 100000;
+        uint64_t key = rand();
         R.tuples[i].key = key;
         R.tuples[i].payload = i;
 
