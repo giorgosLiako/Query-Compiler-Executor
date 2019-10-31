@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "alloc_free.h"
@@ -8,13 +9,13 @@
 
 #define get_byte(num, byte) ( num >> ( (sizeof(num) << 3) - (byte << 3) ) & 0xFF)
 
-void build_histogram(relation *rel, histogram *hist, int wanted_byte) {
+void build_histogram(relation *rel, histogram *hist, int wanted_byte, int start, int size) {
 
-    for (ssize_t i = 0 ; i < 256 ; i++) {
+    for (size_t i = 0 ; i < 256 ; i++) {
         hist->array[i] = 0;
     }
 
-    for (size_t i = 0 ; i < rel->num_tuples ; i++) {
+    for (size_t i = start ; i < start + size ; i++) {
         uint32_t byte = get_byte(rel->tuples[i].key, wanted_byte);
         hist->array[byte]++;
     }
@@ -39,15 +40,15 @@ void build_psum(histogram *hist, histogram *psum) {
 
 relation* build_reordered_array(relation* reorder_rel , relation *prev_rel, 
                                 histogram* histo , histogram* psum, 
-                                int wanted_byte ) {
+                                int wanted_byte, int start, int size, int base) {
    
     histogram temp = *histo;
 
     
-    for (size_t i = 0 ; i < prev_rel->num_tuples ; i++) {
+    for (size_t i = start ; i < start + size ; i++) {
         uint32_t byte = get_byte(prev_rel->tuples[i].key, wanted_byte);
 
-        size_t index = psum->array[byte] + (histo->array[byte] - temp.array[byte]);
+        size_t index = base + psum->array[byte] + (histo->array[byte] - temp.array[byte]);
 
         temp.array[byte]--;    
 
@@ -89,39 +90,56 @@ int cmpfunc (const void * a, const void * b) {
 
 void copy(relation *relR, relation *reorderedR, int start, int num) {
 
-    for (ssize_t i = start ;  i < num ; i++) {
+    for (size_t i = start ;  i < num ; i++) {
         relR[i] = reorderedR[i];
     }
 }
 
 
-void recursive_sort(relation *relR, relation *reorderedR, int byte) {
-
+void recursive_sort(relation *relR, relation *reorderedR, int byte, int start, int size, int base) {
     histogram hist, psum;
-    build_histogram(relR, &hist, byte);
+    build_histogram(relR, &hist, byte, start, size);
     build_psum(&hist, &psum);
+    reorderedR = build_reordered_array(reorderedR, relR, &hist, &psum, byte, start, size, base);
+
+    log_info("\n ->%d %d %d\n", byte, start, size);
+    for (size_t i = 0; i < 256; i++) {
+        if (hist.array[i] != 0) log_info("%d %d %d\n", i, hist.array[i], psum.array[i]);
+    }
     
+
     for (size_t i = 0 ; i < 256 ; i++) {
-        if (hist.array[i] > 0 && hist.array[i] < 4) {
-            recursive_sort(reorderedR, relR, ++byte);
+        if (hist.array[i] != 0 && byte != 8) {
+            recursive_sort(reorderedR, relR, byte + 1, psum.array[i], hist.array[i], base + psum.array[i]); //to byte++ pou xes me kseskise xthes
         } 
         else {
-            qsort(reorderedR->tuples, reorderedR->num_tuples, sizeof(tuple), cmpfunc);
-            copy(relR, reorderedR, psum.array[i], hist.array[i]);
-        } 
+            //qsort(reorderedR->tuples + start, size, sizeof(tuple), cmpfunc);
+        }
     }
 }
 
 result* SortMergeJoin(relation *relR, relation *relS) {
 
-    relation *reorderedR = NULL;
-
+    relation *reorderedR = NULL, *temp;
+    
     reorderedR = allocate_reordered_array(relR);
 
-    recursive_sort(relR, reorderedR, 1);
+    temp = reorderedR;
 
-    free_reordered_array(reorderedR);
+    recursive_sort(relR, reorderedR, 1, 0, relR->num_tuples, 0);
+
+    for (size_t i = 0; i < relR->num_tuples; i++) {
+        printf("%ld\t%d\n", relR->tuples[i].key, relR->tuples[i].payload);
+    }
+    
+
+    free_reordered_array(temp);
+
+
+    return NULL;
 }
+
+
 
 
 
