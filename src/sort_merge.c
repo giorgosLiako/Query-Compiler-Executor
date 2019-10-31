@@ -128,22 +128,6 @@ result* SortMergeJoin(relation *relR, relation *relS) {
 
     reorderedR = build_reordered_array(reorderedR,relR , &histR , &psumR , byte);
     
-    temp = relR;
-    relR = reorderedR;
-    reorderedR = relR;
-
-    while(1)
-    {
-        for(size_t i = 0 ; i <= 255 ; i++ )
-        {
-            if ( histR->hist[i] == 0)
-                continue;
-
-            
-
-        }
-    }
-
     recursive_sort(relR, reorderedR, 1);
 
     free_reordered_array(reorderedR);
