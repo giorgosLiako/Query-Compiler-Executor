@@ -182,11 +182,10 @@ void recursive_sort(relation *relR, relation *reorderedR, int byte, int start, i
         {   if (byte <= 8 )
             {
                 recursive_sort(reorderedR, relR, byte + 1, start + psum.array[i], hist.array[i]); //to byte++ pou xes me kseskise xthes
-
             } 
             else 
             {
-                random_quicksort(relR->tuples, psum.array[i], psum.array[i] + hist.array[i]);
+                random_quicksort(relR->tuples, start + psum.array[i], start + psum.array[i] + hist.array[i]);
             }
         }
     }
