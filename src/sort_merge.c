@@ -117,6 +117,9 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     relation *reorderedR = NULL;
     relation *temp = NULL;
 
+    histogram hist, psum;
+    int byte = 1;
+    
     reorderedR = allocate_reordered_array(relR);
     
     build_histogram(relR, &histR, byte);
