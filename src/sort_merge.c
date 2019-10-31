@@ -48,7 +48,7 @@ relation* build_reordered_array(relation* reorder_rel , relation *prev_rel,
     for (ssize_t i = start ; i < start + size ; i++) {
         uint32_t byte = get_byte(prev_rel->tuples[i].key, wanted_byte);
 
-        size_t index = start + psum->array[byte] + (histo->array[byte] - temp.array[byte]);
+        size_t index = start +  psum->array[byte] + (histo->array[byte] - temp.array[byte]);
 
         temp.array[byte]--;    
 
@@ -151,9 +151,26 @@ void random_quicksort(tuple *tuples, ssize_t low, ssize_t high) {
     random_quicksort(tuples, pivot + 1, high);
 }
 
+void is_sorted(relation * rel)
+{
+    for (size_t i = 1 ; i < rel->num_tuples ; i++ )
+    {
+        if ( rel->tuples[i].key < rel->tuples[i-1].key )
+        {
+            printf("rel[%ld] = %ld rel[%ld] = %ld \n", i-1 , rel->tuples[i-1].key , i , rel->tuples[i].key);
+            printf("NOT SORTED\n");
+            return;
+        }
+    }
+
+    printf("SORTED\n");
+}
 
 void recursive_sort(relation *relR, relation *reorderedR, int byte, int start, int size) {
    
+    if (byte > 8)
+        return;
+
     histogram hist, psum;
     build_histogram(relR, &hist, byte, start, size);
     build_psum(&hist, &psum);
@@ -161,22 +178,23 @@ void recursive_sort(relation *relR, relation *reorderedR, int byte, int start, i
     
 
     for (size_t i = 0 ; i < 256 ; i++) {
-        if (hist.array[i] != 0 && byte != 8) {
-            recursive_sort(reorderedR, relR, byte + 1, psum.array[i], hist.array[i]); //to byte++ pou xes me kseskise xthes
-        } 
-        else {
-            random_quicksort(relR->tuples, psum.array[i], psum.array[i] + hist.array[i]);
+        if (hist.array[i] != 0 ) 
+        {   if (byte <= 8 )
+            {
+                recursive_sort(reorderedR, relR, byte + 1, start + psum.array[i], hist.array[i]); //to byte++ pou xes me kseskise xthes
+
+            } 
+            else 
+            {
+                random_quicksort(relR->tuples, psum.array[i], psum.array[i] + hist.array[i]);
+            }
         }
     }
 }
 
 result* SortMergeJoin(relation *relR, relation *relS) {
 
-    relation *reorderedR = NULL;
-    relation *temp = NULL;
-
-    histogram hist, psum;
-    int byte = 1;
+    relation *reorderedR = NULL, *temp;
     
     reorderedR = allocate_reordered_array(relR);
 
@@ -184,17 +202,17 @@ result* SortMergeJoin(relation *relR, relation *relS) {
 
     recursive_sort(relR, reorderedR, 1, 0, relR->num_tuples);
 
+
+    printf("REL R\n");
+    is_sorted(relR);
+/*
     for (size_t i = 0; i < relR->num_tuples; i++) {
         printf("%ld\t%lu\n", relR->tuples[i].key, relR->tuples[i].payload);
     }
-    
-    build_histogram(relR, &histR, byte);
+  */
 
-    build_psum(&histR, &psumR);
+    free_reordered_array(temp);
 
-    reorderedR = build_reordered_array(reorderedR,relR , &histR , &psumR , byte);
-    
-    recursive_sort(relR, reorderedR, 1);
 
     return NULL;
 }

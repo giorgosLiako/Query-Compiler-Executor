@@ -13,7 +13,7 @@ int main() {
     relation R;
     relation S;
 
-    R.num_tuples = 50000;
+    R.num_tuples = 500000;
     R.tuples = MALLOC(tuple, R.num_tuples);
 
     S.num_tuples = 10;
