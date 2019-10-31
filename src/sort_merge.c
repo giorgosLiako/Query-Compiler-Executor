@@ -15,7 +15,7 @@ void build_histogram(relation *rel, histogram *hist, int wanted_byte, int start,
         hist->array[i] = 0;
     }
 
-    for (size_t i = start ; i < start + size ; i++) {
+    for (ssize_t i = start ; i < start + size ; i++) {
         uint32_t byte = get_byte(rel->tuples[i].key, wanted_byte);
         hist->array[byte]++;
     }
@@ -40,12 +40,12 @@ void build_psum(histogram *hist, histogram *psum) {
 
 relation* build_reordered_array(relation* reorder_rel , relation *prev_rel, 
                                 histogram* histo , histogram* psum, 
-                                int wanted_byte, int start, int size, int base) {
+                                int wanted_byte, int start, int size) {
    
     histogram temp = *histo;
 
     
-    for (size_t i = start ; i < start + size ; i++) {
+    for (ssize_t i = start ; i < start + size ; i++) {
         uint32_t byte = get_byte(prev_rel->tuples[i].key, wanted_byte);
 
         size_t index = start + psum->array[byte] + (histo->array[byte] - temp.array[byte]);
@@ -90,7 +90,7 @@ int cmpfunc (const void * a, const void * b) {
 
 void copy(relation *relR, relation *reorderedR, int start, int num) {
 
-    for (size_t i = start ;  i < num ; i++) {
+    for (ssize_t i = start ;  i < num ; i++) {
         relR[i] = reorderedR[i];
     }
 }
@@ -119,7 +119,7 @@ ssize_t hoare_partition(tuple *tuples, ssize_t low, ssize_t high) {
 
     swap(tuples, low, random);
 
-    int pivot = tuples[high].key;
+    uint64_t pivot = tuples[high].key;
 
     while (1) {
 
@@ -152,17 +152,17 @@ void random_quicksort(tuple *tuples, ssize_t low, ssize_t high) {
 }
 
 
-void recursive_sort(relation *relR, relation *reorderedR, int byte, int start, int size, int base) {
+void recursive_sort(relation *relR, relation *reorderedR, int byte, int start, int size) {
    
     histogram hist, psum;
     build_histogram(relR, &hist, byte, start, size);
     build_psum(&hist, &psum);
-    reorderedR = build_reordered_array(reorderedR, relR, &hist, &psum, byte, start, size, base);
+    reorderedR = build_reordered_array(reorderedR, relR, &hist, &psum, byte, start, size);
     
 
     for (size_t i = 0 ; i < 256 ; i++) {
         if (hist.array[i] != 0 && byte != 8) {
-            recursive_sort(reorderedR, relR, byte + 1, psum.array[i], hist.array[i], base + psum.array[i]); //to byte++ pou xes me kseskise xthes
+            recursive_sort(reorderedR, relR, byte + 1, psum.array[i], hist.array[i]); //to byte++ pou xes me kseskise xthes
         } 
         else {
             random_quicksort(relR->tuples, psum.array[i], psum.array[i] + hist.array[i]);
@@ -178,10 +178,10 @@ result* SortMergeJoin(relation *relR, relation *relS) {
 
     temp = reorderedR;
 
-    recursive_sort(relR, reorderedR, 1, 0, relR->num_tuples, 0);
+    recursive_sort(relR, reorderedR, 1, 0, relR->num_tuples);
 
     for (size_t i = 0; i < relR->num_tuples; i++) {
-        printf("%ld\t%d\n", relR->tuples[i].key, relR->tuples[i].payload);
+        printf("%ld\t%lu\n", relR->tuples[i].key, relR->tuples[i].payload);
     }
     
 
