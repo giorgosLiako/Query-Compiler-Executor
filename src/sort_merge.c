@@ -95,17 +95,69 @@ void copy(relation *relR, relation *reorderedR, int start, int num) {
     }
 }
 
+void swap(tuple *tuples, ssize_t i, ssize_t j) {
+    tuple tup = tuples[i];
+    tuples[i] = tuples[j];
+    tuples[j] = tup;
+}
+
+ssize_t random_in_range(ssize_t low, ssize_t high) {
+
+    ssize_t r = rand();
+
+    r = (r << 31) | rand();
+
+    return r % (high - low + 1) + low;
+}
+
+ssize_t hoare_partition(tuple *tuples, ssize_t low, ssize_t high) {
+
+    ssize_t i = low - 1;
+    ssize_t j = high + 1;
+
+    ssize_t random = random_in_range(low, high);
+
+    swap(tuples, low, random);
+
+    int pivot = tuples[high].key;
+
+    while (1) {
+
+        do {
+            i++;
+        } while (tuples[i].key < pivot);
+
+        do {
+            j--;
+        } while (tuples[j].key > pivot);
+
+        if (i >= j) {
+            return j;
+        }
+
+        swap(tuples, i, j);
+    }
+}
+
+void random_quicksort(tuple *tuples, ssize_t low, ssize_t high) {
+
+    if (low >= high) {
+        return;
+    }
+
+    ssize_t pivot = hoare_partition(tuples, low, high);
+
+    random_quicksort(tuples, low, pivot);
+    random_quicksort(tuples, pivot + 1, high);
+}
+
 
 void recursive_sort(relation *relR, relation *reorderedR, int byte, int start, int size, int base) {
+   
     histogram hist, psum;
     build_histogram(relR, &hist, byte, start, size);
     build_psum(&hist, &psum);
     reorderedR = build_reordered_array(reorderedR, relR, &hist, &psum, byte, start, size, base);
-
-    // log_info("\n ->%d %d %d\n", byte, start, size);
-    // for (size_t i = 0; i < 256; i++) {
-    //     if (hist.array[i] != 0) log_info("%d %d %d\n", i, hist.array[i], psum.array[i]);
-    // }
     
 
     for (size_t i = 0 ; i < 256 ; i++) {
@@ -113,7 +165,7 @@ void recursive_sort(relation *relR, relation *reorderedR, int byte, int start, i
             recursive_sort(reorderedR, relR, byte + 1, psum.array[i], hist.array[i], base + psum.array[i]); //to byte++ pou xes me kseskise xthes
         } 
         else {
-            //qsort(reorderedR->tuples + start, size, sizeof(tuple), cmpfunc);
+            random_quicksort(relR->tuples, psum.array[i], psum.array[i] + hist.array[i]);
         }
     }
 }
