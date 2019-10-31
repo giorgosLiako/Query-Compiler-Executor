@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "alloc_free.h"
@@ -8,13 +9,13 @@
 
 #define get_byte(num, byte) ( num >> ( (sizeof(num) << 3) - (byte << 3) ) & 0xFF)
 
-void build_histogram(relation *rel, histogram *hist, int wanted_byte) {
+void build_histogram(relation *rel, histogram *hist, int wanted_byte, int start, int size) {
 
-    for (ssize_t i = 0 ; i < 256 ; i++) {
+    for (size_t i = 0 ; i < 256 ; i++) {
         hist->array[i] = 0;
     }
 
-    for (size_t i = 0 ; i < rel->num_tuples ; i++) {
+    for (size_t i = start ; i < start + size ; i++) {
         uint32_t byte = get_byte(rel->tuples[i].key, wanted_byte);
         hist->array[byte]++;
     }
@@ -39,15 +40,15 @@ void build_psum(histogram *hist, histogram *psum) {
 
 relation* build_reordered_array(relation* reorder_rel , relation *prev_rel, 
                                 histogram* histo , histogram* psum, 
-                                int wanted_byte ) {
+                                int wanted_byte, int start, int size, int base) {
    
     histogram temp = *histo;
 
     
-    for (size_t i = 0 ; i < prev_rel->num_tuples ; i++) {
+    for (size_t i = start ; i < start + size ; i++) {
         uint32_t byte = get_byte(prev_rel->tuples[i].key, wanted_byte);
 
-        size_t index = psum->array[byte] + (histo->array[byte] - temp.array[byte]);
+        size_t index = start + psum->array[byte] + (histo->array[byte] - temp.array[byte]);
 
         temp.array[byte]--;    
 
@@ -89,26 +90,83 @@ int cmpfunc (const void * a, const void * b) {
 
 void copy(relation *relR, relation *reorderedR, int start, int num) {
 
-    for (ssize_t i = start ;  i < num ; i++) {
+    for (size_t i = start ;  i < num ; i++) {
         relR[i] = reorderedR[i];
     }
 }
 
+void swap(tuple *tuples, ssize_t i, ssize_t j) {
+    tuple tup = tuples[i];
+    tuples[i] = tuples[j];
+    tuples[j] = tup;
+}
 
-void recursive_sort(relation *relR, relation *reorderedR, int byte) {
+ssize_t random_in_range(ssize_t low, ssize_t high) {
 
+    ssize_t r = rand();
+
+    r = (r << 31) | rand();
+
+    return r % (high - low + 1) + low;
+}
+
+ssize_t hoare_partition(tuple *tuples, ssize_t low, ssize_t high) {
+
+    ssize_t i = low - 1;
+    ssize_t j = high + 1;
+
+    ssize_t random = random_in_range(low, high);
+
+    swap(tuples, low, random);
+
+    int pivot = tuples[high].key;
+
+    while (1) {
+
+        do {
+            i++;
+        } while (tuples[i].key < pivot);
+
+        do {
+            j--;
+        } while (tuples[j].key > pivot);
+
+        if (i >= j) {
+            return j;
+        }
+
+        swap(tuples, i, j);
+    }
+}
+
+void random_quicksort(tuple *tuples, ssize_t low, ssize_t high) {
+
+    if (low >= high) {
+        return;
+    }
+
+    ssize_t pivot = hoare_partition(tuples, low, high);
+
+    random_quicksort(tuples, low, pivot);
+    random_quicksort(tuples, pivot + 1, high);
+}
+
+
+void recursive_sort(relation *relR, relation *reorderedR, int byte, int start, int size, int base) {
+   
     histogram hist, psum;
-    build_histogram(relR, &hist, byte);
+    build_histogram(relR, &hist, byte, start, size);
     build_psum(&hist, &psum);
+    reorderedR = build_reordered_array(reorderedR, relR, &hist, &psum, byte, start, size, base);
     
+
     for (size_t i = 0 ; i < 256 ; i++) {
-        if (hist.array[i] > 0 && hist.array[i] < 4) {
-            recursive_sort(reorderedR, relR, ++byte);
+        if (hist.array[i] != 0 && byte != 8) {
+            recursive_sort(reorderedR, relR, byte + 1, psum.array[i], hist.array[i], base + psum.array[i]); //to byte++ pou xes me kseskise xthes
         } 
         else {
-            qsort(reorderedR->tuples, reorderedR->num_tuples, sizeof(tuple), cmpfunc);
-            copy(relR, reorderedR, psum.array[i], hist.array[i]);
-        } 
+            random_quicksort(relR->tuples, psum.array[i], psum.array[i] + hist.array[i]);
+        }
     }
 }
 
@@ -130,7 +188,7 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     
     recursive_sort(relR, reorderedR, 1);
 
-    free_reordered_array(reorderedR);
+    return NULL;
 }
 
 
