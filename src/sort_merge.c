@@ -8,13 +8,13 @@
 
 #define get_byte(num, byte) ( num >> ( (sizeof(num) << 3) - (byte << 3) ) & 0xFF)
 
-void build_histogram(relation *rel, histogram *hist, int wanted_byte, int start, int size) {
+void build_histogram(relation *rel, histogram *hist, int wanted_byte) {
 
-    for (size_t i = 0 ; i < 256 ; i++) {
+    for (ssize_t i = 0 ; i < 256 ; i++) {
         hist->array[i] = 0;
     }
 
-    for (size_t i = start ; i < size ; i++) {
+    for (size_t i = 0 ; i < rel->num_tuples ; i++) {
         uint32_t byte = get_byte(rel->tuples[i].key, wanted_byte);
         hist->array[byte]++;
     }
@@ -39,12 +39,12 @@ void build_psum(histogram *hist, histogram *psum) {
 
 relation* build_reordered_array(relation* reorder_rel , relation *prev_rel, 
                                 histogram* histo , histogram* psum, 
-                                int wanted_byte, int start, int size) {
+                                int wanted_byte ) {
    
     histogram temp = *histo;
 
     
-    for (size_t i = start ; i < size ; i++) {
+    for (size_t i = 0 ; i < prev_rel->num_tuples ; i++) {
         uint32_t byte = get_byte(prev_rel->tuples[i].key, wanted_byte);
 
         size_t index = psum->array[byte] + (histo->array[byte] - temp.array[byte]);
@@ -89,48 +89,38 @@ int cmpfunc (const void * a, const void * b) {
 
 void copy(relation *relR, relation *reorderedR, int start, int num) {
 
-    for (size_t i = start ;  i < num ; i++) {
+    for (ssize_t i = start ;  i < num ; i++) {
         relR[i] = reorderedR[i];
     }
 }
 
 
-void recursive_sort(relation *relR, relation *reorderedR, int byte, int start, int size, int base) {
+void recursive_sort(relation *relR, relation *reorderedR, int byte) {
 
     histogram hist, psum;
-    build_histogram(relR, &hist, byte, start, size);
+    build_histogram(relR, &hist, byte);
     build_psum(&hist, &psum);
-    reorderedR = build_reordered_array(reorderedR, relR, &hist, &psum, byte, start, size);
-
+    
     for (size_t i = 0 ; i < 256 ; i++) {
-        if (hist.array[i] != 0 && byte != 8){
-            recursive_sort(reorderedR, relR, ++byte, psum.array[i], hist.array[i], base + psum.array[i]);
+        if (hist.array[i] > 0 && hist.array[i] < 4) {
+            recursive_sort(reorderedR, relR, ++byte);
         } 
         else {
-            qsort(reorderedR->tuples + start, size, sizeof(tuple), cmpfunc);
-        }
+            qsort(reorderedR->tuples, reorderedR->num_tuples, sizeof(tuple), cmpfunc);
+            copy(relR, reorderedR, psum.array[i], hist.array[i]);
+        } 
     }
 }
 
 result* SortMergeJoin(relation *relR, relation *relS) {
 
-    relation *reorderedR = NULL, *temp;
-    
+    relation *reorderedR = NULL;
+
     reorderedR = allocate_reordered_array(relR);
 
-    temp = reorderedR;
+    recursive_sort(relR, reorderedR, 1);
 
-    recursive_sort(relR, reorderedR, 1, 0, relR->num_tuples, 0);
-
-    for (size_t i = 0; i < relR->num_tuples; i++) {
-        printf("%ld\n", relR->tuples[i].key);
-    }
-    
-
-    free_reordered_array(temp);
-
-
-    return NULL;
+    free_reordered_array(reorderedR);
 }
 
 
