@@ -17,7 +17,7 @@ int main() {
     R.num_tuples = 500000;
     R.tuples = MALLOC(tuple, R.num_tuples);
 
-    S.num_tuples = 10;
+    S.num_tuples = 100000;
     S.tuples = MALLOC(tuple, S.num_tuples);
 
     srand(32839832);
@@ -25,13 +25,27 @@ int main() {
   //  log_info("ARRAY: KEY\tROW_ID\n");
 
     for (size_t i = 0 ; i < R.num_tuples ; i++) {
-       /* uint64_t key = 0;
+        uint64_t key = 0;
         for (int j=0; j<64; j++) {
             key = key*2 + rand()%2;
-        }*/
-        uint64_t key = rand();
+        }
+        
+        //uint64_t key = rand();
         R.tuples[i].key = key;
         R.tuples[i].payload = i;
+
+    	//printf("%lu\t%lu\n", key, i);
+    }
+
+    for (size_t i = 0 ; i < S.num_tuples ; i++) {
+        uint64_t key = 0;
+        for (int j=0; j<64; j++) {
+            key = key*2 + rand()%2;
+        }
+        
+        //uint64_t key = rand();
+        S.tuples[i].key = key;
+        S.tuples[i].payload = i;
 
     	//printf("%lu\t%lu\n", key, i);
     }

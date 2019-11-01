@@ -84,12 +84,6 @@ void free_reordered_array(relation* r) {
     FREE(r);
 }
 
-void swap(tuple *tuples, ssize_t i, ssize_t j) {
-    tuple tup = tuples[i];
-    tuples[i] = tuples[j];
-    tuples[j] = tup;
-}
-
 ssize_t random_in_range(ssize_t low, ssize_t high) {
 
     ssize_t r = rand();
@@ -98,6 +92,13 @@ ssize_t random_in_range(ssize_t low, ssize_t high) {
 
     return r % (high - low + 1) + low;
 }
+
+void swap(tuple *tuples, ssize_t i, ssize_t j) {
+    tuple tup = tuples[i];
+    tuples[i] = tuples[j];
+    tuples[j] = tup;
+}
+
 
 ssize_t hoare_partition(tuple *tuples, ssize_t low, ssize_t high) {
 
@@ -260,16 +261,15 @@ bool is_sorted(relation *relR, uint64_t num_tuples) {
 }
 
 void alternative_without_recursion(relation *);
+void Join_relations(relation* , relation* );
 
 result* SortMergeJoin(relation *relR, relation *relS) {
 
-    relation *reorderedR = NULL, *temp;
+    relation *reorderedR = NULL;
+    relation *reorderedS = NULL; 
     
     reorderedR = allocate_reordered_array(relR);
-
-    temp = relS;
-    temp = reorderedR;
-    
+    reorderedS = allocate_reordered_array(relS);
 
     //recursive_sort(relR, reorderedR, 1, 0, relR->num_tuples);
 
@@ -284,12 +284,21 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     // if (is_sorted(relR, relR->num_tuples)) {
     //     printf("Its sorted\n");
     // }
+
     alternative_without_recursion(relR);
      if (is_sorted(relR, relR->num_tuples))
-         printf("Its sorted\n");
+         printf("R is sorted\n");
 
-    free_reordered_array(temp);
+    alternative_without_recursion(relS);
+     if (is_sorted(relS, relS->num_tuples))
+         printf("S is sorted\n");
 
+
+    //Join(relR , relS);
+
+
+    free_reordered_array(reorderedR);
+    free_reordered_array(reorderedS);
     //DArray_destroy(stack);
 
     return NULL;
