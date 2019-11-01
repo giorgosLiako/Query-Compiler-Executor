@@ -286,19 +286,19 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     // }
 
     alternative_without_recursion(relR);
-     if (is_sorted(relR, relR->num_tuples))
-         printf("R is sorted\n");
+    if (is_sorted(relR, relR->num_tuples))
+        printf("R is sorted\n");
 
     for (size_t i = 0; i < relR->num_tuples; i++) {
-             printf("%lu\t%lu\n", relR->tuples[i].key, relR->tuples[i].payload);
+            printf("%lu\t%lu\n", relR->tuples[i].key, relR->tuples[i].payload);
     }
 
 
     alternative_without_recursion(relS);
-     if (is_sorted(relS, relS->num_tuples))
-         printf("S is sorted\n");
+    if (is_sorted(relS, relS->num_tuples))
+        printf("S is sorted\n");
     for (size_t i = 0; i < relS->num_tuples; i++) {
-             printf("%lu\t%lu\n", relS->tuples[i].key, relS->tuples[i].payload);
+            printf("%lu\t%lu\n", relS->tuples[i].key, relS->tuples[i].payload);
     }
 
 
@@ -307,7 +307,6 @@ result* SortMergeJoin(relation *relR, relation *relS) {
 
     free_reordered_array(reorderedR);
     free_reordered_array(reorderedS);
-    //DArray_destroy(stack);
 
     return NULL;
 }
