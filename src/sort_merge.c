@@ -42,7 +42,7 @@ result *join_relations(relation* relR, relation* relS) {
     int count = 0;
     while( r < relR->num_tuples && s < relS->num_tuples )
     {
-
+        printf("S is %lu , R is %lu \n",s,r);
         if ( relR->tuples[r].key == relS->tuples[s].key )
         {   
             count++;
@@ -86,7 +86,7 @@ result *join_relations(relation* relR, relation* relS) {
         }
         
     }
-
+    printf("JOIN COUNT: %d\n",count);
     return res_list;
 
     error:
@@ -163,7 +163,12 @@ result* SortMergeJoin(relation *relR, relation *relS) {
 
     check(iterative_sort(relS) != -1, "Couldn't sort the relation, something came up");
 
-    return join_relations(relR , relS);
+    
+    if (relR->num_tuples > relS->num_tuples)
+        return join_relations(relR , relS);
+    else
+        return join_relations(relS , relR);
+    
 
     error:
         return NULL;
