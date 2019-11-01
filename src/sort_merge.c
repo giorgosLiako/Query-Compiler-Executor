@@ -354,13 +354,11 @@ void Join_relations(relation* relR, relation* relS)
         else if ( relR->tuples[r].key < relS->tuples[s].key)
         {
             flag_r = 0 ;
-            flag_s = 0 ; 
             r++;
         }
         else
         {
             flag_r = 0 ;
-            flag_s = 0 ; 
             s++;
         }
         
