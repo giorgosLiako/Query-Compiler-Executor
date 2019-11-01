@@ -29,4 +29,9 @@ typedef struct stack_node {
     histogram *psum;
 } stack_node;
 
+typedef struct queue_node {
+    histogram *hist;
+    histogram *psum;
+} queue_node;
+
 #endif

@@ -13,11 +13,8 @@ int main() {
     relation R;
     relation S;
 
-<<<<<<< HEAD
-    R.num_tuples = 50;
-=======
+
     R.num_tuples = 500000;
->>>>>>> 233fd87b84a61e293a98fd0b4ae75c937fbba00b
     R.tuples = MALLOC(tuple, R.num_tuples);
 
     S.num_tuples = 10;
@@ -36,7 +33,7 @@ int main() {
         R.tuples[i].key = key;
         R.tuples[i].payload = i;
 
-    	//printf("%lu\t%lu\n", key, i);
+    	printf("%lu\t%lu\n", key, i);
     }
 
     SortMergeJoin(&R, &S);

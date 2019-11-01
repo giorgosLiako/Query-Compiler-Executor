@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/types.h>
 #include "alloc_free.h"
 #include "DArray.h"
 #include "structs.h"
@@ -138,20 +139,19 @@ void random_quicksort(tuple *tuples, ssize_t low, ssize_t high) {
     random_quicksort(tuples, pivot + 1, high);
 }
 
-void is_sorted(relation * rel)
-{
-    for (size_t i = 1 ; i < rel->num_tuples ; i++ )
-    {
-        if ( rel->tuples[i].key < rel->tuples[i-1].key )
-        {
-            printf("rel[%ld] = %ld rel[%ld] = %ld \n", i-1 , rel->tuples[i-1].key , i , rel->tuples[i].key);
-            printf("NOT SORTED\n");
-            return;
-        }
-    }
+// void is_sorted(relation * rel) {
+//     for (size_t i = 1 ; i < rel->num_tuples ; i++ )
+//     {
+//         if ( rel->tuples[i].key < rel->tuples[i-1].key )
+//         {
+//             printf("rel[%ld] = %ld rel[%ld] = %ld \n", i-1 , rel->tuples[i-1].key , i , rel->tuples[i].key);
+//             printf("NOT SORTED\n");
+//             return;
+//         }
+//     }
 
-    printf("SORTED\n");
-}
+//     printf("SORTED\n");
+// }
 
 void recursive_sort(relation *relR, relation *reorderedR, int byte, int start, int size) {
    
@@ -175,77 +175,77 @@ void recursive_sort(relation *relR, relation *reorderedR, int byte, int start, i
     }
 }
 
-relation* iterative_sort(DArray *stack, relation *relR, relation *reorderedR) {
+// relation* iterative_sort(DArray *stack, relation *relR, relation *reorderedR) {
 
-    histogram *hist, *psum;
+//     histogram *hist, *psum;
   
-    hist = MALLOC(histogram, 1);
-    check_mem(hist);
-    psum = MALLOC(histogram, 1);
-    check_mem(psum);
+//     hist = MALLOC(histogram, 1);
+//     check_mem(hist);
+//     psum = MALLOC(histogram, 1);
+//     check_mem(psum);
 
-    stack_node s_node, temp;
-    s_node.hist = hist;
-    s_node.psum = psum;
-    s_node.current_byte = 1;
-    s_node.reorderedR = reorderedR;
-    s_node.relR = relR;
-    s_node.start = 0;
-    s_node.size = relR->num_tuples;
+//     stack_node s_node, temp;
+//     s_node.hist = hist;
+//     s_node.psum = psum;
+//     s_node.current_byte = 1;
+//     s_node.reorderedR = reorderedR;
+//     s_node.relR = relR;
+//     s_node.start = 0;
+//     s_node.size = relR->num_tuples;
 
-    DArray_push(stack, &s_node);
+//     DArray_push(stack, &s_node);
 
-    bool swap_relations = true;
-    while (1) {
+//     bool swap_relations = true;
+//     while (1) {
 
-        void *element = DArray_pop(stack);
-        s_node = *(stack_node *) element;
+//         void *element = DArray_pop(stack);
+//         s_node = *(stack_node *) element;
 
-        build_histogram(s_node.relR, s_node.hist, s_node.current_byte, s_node.start, s_node.size);
-        build_psum(s_node.hist, s_node.psum);
-        s_node.reorderedR = build_reordered_array(s_node.reorderedR, s_node.relR, s_node.hist, s_node.psum, s_node.current_byte, s_node.start, s_node.size);
+//         build_histogram(s_node.relR, s_node.hist, s_node.current_byte, s_node.start, s_node.size);
+//         build_psum(s_node.hist, s_node.psum);
+//         s_node.reorderedR = build_reordered_array(s_node.reorderedR, s_node.relR, s_node.hist, s_node.psum, s_node.current_byte, s_node.start, s_node.size);
         
-        debug("byte = %d, start = %d, size = %d", s_node.current_byte, s_node.start, s_node.size);
+//         debug("byte = %d, start = %d, size = %d", s_node.current_byte, s_node.start, s_node.size);
 
-        for (size_t i = 0 ; i < 256 ; i++) {
+//         for (size_t i = 0 ; i < 256 ; i++) {
             
-            if (s_node.hist->array[i] != 0 && s_node.current_byte != 9) {
-                /*Create new snapshot */
-                s_node.current_byte++;
-                s_node.start += s_node.psum->array[i];
-                s_node.size = s_node.hist->array[i];
+//             if (s_node.hist->array[i] != 0 && s_node.current_byte != 9) {
+//                 /*Create new snapshot */
+//                 s_node.current_byte++;
+//                 s_node.start += s_node.psum->array[i];
+//                 s_node.size = s_node.hist->array[i];
                
-                if (swap_relations) {                      
-                    relation *temp = s_node.relR;
-                    s_node.relR = s_node.reorderedR;
-                    s_node.reorderedR = temp;
+//                 if (swap_relations) {                      
+//                     relation *temp = s_node.relR;
+//                     s_node.relR = s_node.reorderedR;
+//                     s_node.reorderedR = temp;
 
-                    swap_relations = false;
-                } else {
-                    relation *temp = s_node.reorderedR;
-                    s_node.reorderedR = s_node.relR;
-                    s_node.relR = temp;
+//                     swap_relations = false;
+//                 } else {
+//                     relation *temp = s_node.reorderedR;
+//                     s_node.reorderedR = s_node.relR;
+//                     s_node.relR = temp;
 
-                    swap_relations = true;
-                }
+//                     swap_relations = true;
+//                 }
 
-                DArray_push(stack, &s_node);
-            } 
-            else {
-                //random_quicksort(s_node.reorderedR->tuples, s_node.start + s_node.psum->array[i], s_node.start + s_node.psum->array[i] + s_node.hist->array[i]);
-            }
-        }
-        if (!DArray_count(stack)) {
-            relation *retval = s_node.relR;
-            FREE(element);
-            return retval;
-        }
-        FREE(element);
-    }
+//                 DArray_push(stack, &s_node);
+//             } 
+//             else {
+//                 //random_quicksort(s_node.reorderedR->tuples, s_node.start + s_node.psum->array[i], s_node.start + s_node.psum->array[i] + s_node.hist->array[i]);
+//             }
+//         }
+//         if (!DArray_count(stack)) {
+//             relation *retval = s_node.relR;
+//             FREE(element);
+//             return retval;
+//         }
+//         FREE(element);
+//     }
 
-    error:
-        return NULL;
-}
+//     error:
+//         return NULL;
+// }
 
 bool is_sorted(relation *relR, uint64_t num_tuples) {
 
@@ -258,32 +258,36 @@ bool is_sorted(relation *relR, uint64_t num_tuples) {
     return true;
 }
 
+void alternative_without_recursion(relation *);
+
 result* SortMergeJoin(relation *relR, relation *relS) {
 
     relation *reorderedR = NULL, *temp;
     
     reorderedR = allocate_reordered_array(relR);
 
+    temp = relS;
     temp = reorderedR;
-
-   // recursive_sort(relR, reorderedR, 1, 0, relR->num_tuples);
-
-    DArray *stack = DArray_create(sizeof(stack_node), 25);
     
-    relR = iterative_sort(stack, relR, reorderedR);
 
-   /* for (size_t i = 0; i < relR->num_tuples; i++) {
-        printf("%ld\t%lu\n", relR->tuples[i].key, relR->tuples[i].payload);
-    } */
+    //recursive_sort(relR, reorderedR, 1, 0, relR->num_tuples);
 
-    if (is_sorted(relR, relR->num_tuples)) {
-        printf("Its sorted\n");
-    }
-  */
+    //DArray *stack = DArray_create(sizeof(stack_node), 25);
+    
+    //relR = iterative_sort(stack, relR, reorderedR);
+
+    // for (size_t i = 0; i < relR->num_tuples; i++) {
+    //         printf("%ld\t%lu\n", relR->tuples[i].key, relR->tuples[i].payload);
+    // }
+
+    // if (is_sorted(relR, relR->num_tuples)) {
+    //     printf("Its sorted\n");
+    // }
+    alternative_without_recursion(relR);
 
     free_reordered_array(temp);
 
-    DArray_destroy(stack);
+    //DArray_destroy(stack);
 
     return NULL;
 }
@@ -291,28 +295,208 @@ result* SortMergeJoin(relation *relR, relation *relS) {
 
 
 
-/*
-    stack_node s_node;
 
-    DArray *stack = DArray_create(sizeof(stack_node), 25);
+    // stack_node s_node;
 
-    while (1) {
+    // DArray *stack = DArray_create(sizeof(stack_node), 25);
 
-        s_node.hist = MALLOC(histogram, 1);
-        check_mem(s_node.hist);
-        s_node.psum = MALLOC(histogram, 1);
-        check_mem(s_node.psum);
+    // while (1) {
 
-        DArray_push(stack, &s_node);
+    //     s_node.hist = MALLOC(histogram, 1);
+    //     check_mem(s_node.hist);
+    //     s_node.psum = MALLOC(histogram, 1);
+    //     check_mem(s_node.psum);
 
-        build_histogram(relR, s_node.hist, byte);
-        build_psum(s_node.hist, s_node.psum);
+    //     DArray_push(stack, &s_node);
 
-        reorderedR = build_reordered_array(reorderedR, relR , s_node.hist, s_node.psum, byte);
-    } */
+    //     build_histogram(relR, s_node.hist, byte);
+    //     build_psum(s_node.hist, s_node.psum);
 
-    /*error:
-        free_reordered_array(reorderedR);
-        FREE(s_node.hist);
-        FREE(s_node.psum);
-        return NULL;  */  
+    //     reorderedR = build_reordered_array(reorderedR, relR , s_node.hist, s_node.psum, byte);
+    // }
+
+    // error:
+    //     free_reordered_array(reorderedR);
+    //     FREE(s_node.hist);
+    //     FREE(s_node.psum);
+    //     return NULL; 
+
+
+typedef struct item{
+    ssize_t base;
+    ssize_t size;
+} item;
+
+
+typedef struct node {
+    item* value;
+    struct node* next;
+} node;
+
+
+typedef struct queue{
+    ssize_t size;
+    node* first;
+    node* last;
+} queue;
+
+queue* new_queue() {
+    queue* new_q = MALLOC(queue, 1);
+    check_mem(new_q);
+    
+    new_q->first = NULL;
+    new_q->last = NULL;
+    new_q->size = 0;
+
+    return new_q;
+
+    error:
+        return NULL;
+}
+
+item* new_item(ssize_t base, ssize_t size) {
+    item* new_i = MALLOC(item, 1);
+    check_mem(new_i);
+
+    new_i->base = base;
+    new_i->size = size;
+
+    return new_i;
+
+    error:
+        return NULL;
+
+}
+
+void delete_item(item* i) {
+    FREE(i);
+    return;
+}
+
+void push(queue* q, item* new_item) {
+    if (new_item == NULL) return;
+
+    node* new_n = MALLOC(node, 1);
+    check_mem(new_n);
+
+    new_n->value = new_item;
+    new_n->next = NULL;
+
+    if (q->size == 0) {
+        q->first = new_n;
+        q->last = new_n;
+        q->size++;
+    }
+    else {
+        q->last->next = new_n;
+        q->last = new_n;
+        q->size++;
+    }
+
+    error:
+        return;
+}
+
+item* pop(queue *q){
+    if (q->size == 0) goto error;
+    item* temp_item;
+    if (q->size == 1) {
+        temp_item = q->first->value;
+
+        free(q->first);
+        q->first = NULL;
+        q->last = NULL;
+        q->size = 0;
+    } else {
+        temp_item = q->first->value;
+        node* temp_node = q->first;
+        
+        q->first = temp_node->next;
+        q->size--;
+        free(temp_node);
+    }
+
+    return temp_item;
+
+
+    error:
+        return NULL;
+
+}
+
+int size(queue* q) {
+     return q->size;
+}
+
+void delete_queue(queue *q) {
+    FREE(q);
+    return;
+}
+
+void swap_arrays(relation* r1, relation* r2) {
+    relation* temp;
+    temp = r1;
+    r1 = r2;
+    r2 = temp;
+}
+
+void alternative_without_recursion(relation *rel) {
+    relation *reordered = allocate_reordered_array(rel);
+    queue *q = new_queue();
+    check_mem(q);
+
+    relation *relations[2];
+
+    histogram new_h, new_p;
+    build_histogram(rel, &new_h, 1, 0, rel->num_tuples);
+    build_psum(&new_h, &new_p);
+    reordered = build_reordered_array(reordered, rel, &new_h, &new_p, 1, 0, rel->num_tuples);
+    
+    relations[0] = rel;
+    relations[1] = reordered;
+
+    for (ssize_t j = 0; j < 256; j++) {
+        if (new_h.array[j] != 0)
+            push(q, new_item(new_p.array[j], new_h.array[j]));
+                 
+    }
+    ssize_t i;
+    for (i = 2; i < 9; i++) {
+        int number_of_items = size(q);
+
+        while (number_of_items) {
+
+            item* current_item = pop(q);
+            ssize_t base = current_item->base, size = current_item->size;
+
+
+            histogram new_h, new_p;
+            build_histogram(relations[(i+1)%2], &new_h, i, base, size);
+            build_psum(&new_h, &new_p);
+            relations[i%2] = build_reordered_array(relations[i%2], relations[(i+1)%2], &new_h, &new_p, i, base, size);
+  
+        
+            for (ssize_t j = 0; j < 256 && i != 8; j++) {
+                if (new_h.array[j] != 0){
+                    push(q, new_item(base + new_p.array[j], new_h.array[j]));
+                 }
+            }
+            delete_item(current_item);
+
+
+            number_of_items--;
+        }
+        
+        
+    }
+    for (size_t j = 0; j < relations[(i+1)%2]->num_tuples; j++)
+    {
+        printf("%ld %ld\n", relations[(i+1)%2]->tuples[j].key, relations[(i+1)%2]->tuples[j].payload);
+    }
+    printf("%d\n", size(q));
+
+    error:
+        if (reordered != NULL) free_reordered_array(reordered);
+        if (q != NULL) delete_queue(q);
+        return;
+}
