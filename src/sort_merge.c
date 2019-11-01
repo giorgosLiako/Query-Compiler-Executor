@@ -8,6 +8,7 @@
 #include "structs.h"
 #include "result_list.h"
 #include "dbg.h"
+#include "Queue_interface.h"
 
 #define get_byte(num, byte) ( num >> ( (sizeof(num) << 3) - (byte << 3) ) & 0xFF)
 
@@ -284,6 +285,8 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     //     printf("Its sorted\n");
     // }
     alternative_without_recursion(relR);
+     if (is_sorted(relR, relR->num_tuples))
+         printf("Its sorted\n");
 
     free_reordered_array(temp);
 
@@ -322,116 +325,7 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     //     return NULL; 
 
 
-typedef struct item{
-    ssize_t base;
-    ssize_t size;
-} item;
 
-
-typedef struct node {
-    item* value;
-    struct node* next;
-} node;
-
-
-typedef struct queue{
-    ssize_t size;
-    node* first;
-    node* last;
-} queue;
-
-queue* new_queue() {
-    queue* new_q = MALLOC(queue, 1);
-    check_mem(new_q);
-    
-    new_q->first = NULL;
-    new_q->last = NULL;
-    new_q->size = 0;
-
-    return new_q;
-
-    error:
-        return NULL;
-}
-
-item* new_item(ssize_t base, ssize_t size) {
-    item* new_i = MALLOC(item, 1);
-    check_mem(new_i);
-
-    new_i->base = base;
-    new_i->size = size;
-
-    return new_i;
-
-    error:
-        return NULL;
-
-}
-
-void delete_item(item* i) {
-    FREE(i);
-    return;
-}
-
-void push(queue* q, item* new_item) {
-    if (new_item == NULL) return;
-
-    node* new_n = MALLOC(node, 1);
-    check_mem(new_n);
-
-    new_n->value = new_item;
-    new_n->next = NULL;
-
-    if (q->size == 0) {
-        q->first = new_n;
-        q->last = new_n;
-        q->size++;
-    }
-    else {
-        q->last->next = new_n;
-        q->last = new_n;
-        q->size++;
-    }
-
-    error:
-        return;
-}
-
-item* pop(queue *q){
-    if (q->size == 0) goto error;
-    item* temp_item;
-    if (q->size == 1) {
-        temp_item = q->first->value;
-
-        free(q->first);
-        q->first = NULL;
-        q->last = NULL;
-        q->size = 0;
-    } else {
-        temp_item = q->first->value;
-        node* temp_node = q->first;
-        
-        q->first = temp_node->next;
-        q->size--;
-        free(temp_node);
-    }
-
-    return temp_item;
-
-
-    error:
-        return NULL;
-
-}
-
-int size(queue* q) {
-     return q->size;
-}
-
-void delete_queue(queue *q) {
-    FREE(q);
-    return;
-}
 
 void swap_arrays(relation* r1, relation* r2) {
     relation* temp;
@@ -489,12 +383,13 @@ void alternative_without_recursion(relation *rel) {
         
         
     }
+/*
     for (size_t j = 0; j < relations[(i+1)%2]->num_tuples; j++)
     {
         printf("%ld %ld\n", relations[(i+1)%2]->tuples[j].key, relations[(i+1)%2]->tuples[j].payload);
     }
     printf("%d\n", size(q));
-
+*/
     error:
         if (reordered != NULL) free_reordered_array(reordered);
         if (q != NULL) delete_queue(q);

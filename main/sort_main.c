@@ -33,7 +33,7 @@ int main() {
         R.tuples[i].key = key;
         R.tuples[i].payload = i;
 
-    	printf("%lu\t%lu\n", key, i);
+    	//printf("%lu\t%lu\n", key, i);
     }
 
     SortMergeJoin(&R, &S);
