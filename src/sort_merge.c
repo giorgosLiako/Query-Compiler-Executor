@@ -278,7 +278,7 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     //relR = iterative_sort(stack, relR, reorderedR);
 
     // for (size_t i = 0; i < relR->num_tuples; i++) {
-    //         printf("%ld\t%lu\n", relR->tuples[i].key, relR->tuples[i].payload);
+    //          printf("%lu\t%lu\n", relR->tuples[i].key, relR->tuples[i].payload);
     // }
 
     // if (is_sorted(relR, relR->num_tuples)) {
@@ -289,12 +289,20 @@ result* SortMergeJoin(relation *relR, relation *relS) {
      if (is_sorted(relR, relR->num_tuples))
          printf("R is sorted\n");
 
+    for (size_t i = 0; i < relR->num_tuples; i++) {
+             printf("%lu\t%lu\n", relR->tuples[i].key, relR->tuples[i].payload);
+    }
+
+
     alternative_without_recursion(relS);
      if (is_sorted(relS, relS->num_tuples))
          printf("S is sorted\n");
+    for (size_t i = 0; i < relS->num_tuples; i++) {
+             printf("%lu\t%lu\n", relS->tuples[i].key, relS->tuples[i].payload);
+    }
 
 
-    //Join(relR , relS);
+    Join_relations(relR , relS);
 
 
     free_reordered_array(reorderedR);
@@ -304,7 +312,63 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     return NULL;
 }
 
+void Join_relations(relation* relR, relation* relS)
+{
+    size_t r = 0 , s = 0 , temp_r = 0; 
 
+    int flag_r = 0 ;
+    
+    while( r < relR->num_tuples && s < relS->num_tuples )
+    {
+
+        if ( relR->tuples[r].key == relS->tuples[s].key )
+        {
+            printf("JOIN OUTPUT %lu\t%lu\n", relR->tuples[r].key, relS->tuples[s].key);
+            
+            if (relR->tuples[r+1].key > relR->tuples[r].key)
+            {    
+                s++;
+                if (flag_r == 1)
+                    r = temp_r;
+            }
+            else if (relS->tuples[s+1].key > relS->tuples[s].key)
+            {   
+                if ( flag_r == 0)
+                {
+                    flag_r = 1;
+                    temp_r = r;
+                } 
+                r++;
+            }
+            else
+            {   
+                if ( flag_r == 0)
+                {
+                    flag_r = 1;
+                    temp_r = r;
+                } 
+                r++;
+            }
+
+        }
+        else if ( relR->tuples[r].key < relS->tuples[s].key)
+        {
+            flag_r = 0 ;
+            flag_s = 0 ; 
+            r++;
+        }
+        else
+        {
+            flag_r = 0 ;
+            flag_s = 0 ; 
+            s++;
+        }
+        
+    }
+
+    printf("K is %lu \nL is %lu\n",r,s);
+    
+}
 
 
 
