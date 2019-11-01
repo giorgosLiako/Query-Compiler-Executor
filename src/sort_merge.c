@@ -168,12 +168,12 @@ void recursive_sort(relation *relR, relation *reorderedR, int byte, int start, i
     debug("byte = %d, start = %d, size = %d", byte, start, size);
 
     for (size_t i = 0 ; i < 256 ; i++) {
-        if (hist.array[i] != 0 && byte != 9) {
-            recursive_sort(reorderedR, relR, byte + 1, start + psum.array[i], hist.array[i]); //to byte++ pou xes me kseskise xthes
-        } 
-        else {
-         //   random_quicksort(reorderedR->tuples, start + psum.array[i], start + psum.array[i] + hist.array[i]);
+        if (hist.array[i]*sizeof(uint64_t) < 64*1024) {
+            random_quicksort(reorderedR->tuples, start + psum.array[i], start + psum.array[i] + hist.array[i]);
         }
+        else if (hist.array[i] != 0 && byte != 9) 
+            recursive_sort(reorderedR, relR, byte + 1, start + psum.array[i], hist.array[i]); //to byte++ pou xes me kseskise xthes
+        
     }
 }
 
@@ -427,29 +427,35 @@ void alternative_without_recursion(relation *rel) {
     }
     ssize_t i;
     for (i = 2; i < 9; i++) {
-        int number_of_items = size(q);
+        int number_of_buckets = size(q);
 
-        while (number_of_items) {
+        while (number_of_buckets) {
 
             item* current_item = pop(q);
             ssize_t base = current_item->base, size = current_item->size;
-
-
-            histogram new_h, new_p;
-            build_histogram(relations[(i+1)%2], &new_h, i, base, size);
-            build_psum(&new_h, &new_p);
-            relations[i%2] = build_reordered_array(relations[i%2], relations[(i+1)%2], &new_h, &new_p, i, base, size);
-  
-        
-            for (ssize_t j = 0; j < 256 && i != 8; j++) {
-                if (new_h.array[j] != 0){
-                    push(q, new_item(base + new_p.array[j], new_h.array[j]));
-                 }
-            }
             delete_item(current_item);
+            number_of_buckets--;
+
+            if (size*sizeof(uint64_t) < 64*1024) {
+                random_quicksort(relations[(i+1)%2], base, base +size);
+                for (ssize_t j = base; j < base + size; j++) 
+                    relations[i%2]->tuples[j] = relations[(i+1)%2]->tuples[j];
+                
+            } else {
+                histogram new_h, new_p;
+                build_histogram(relations[(i+1)%2], &new_h, i, base, size);
+                build_psum(&new_h, &new_p);
+                relations[i%2] = build_reordered_array(relations[i%2], relations[(i+1)%2], &new_h, &new_p, i, base, size);
+    
+            
+                for (ssize_t j = 0; j < 256 && i != 8; j++) {
+                    if (new_h.array[j] != 0)
+                        push(q, new_item(base + new_p.array[j], new_h.array[j]));
+                }
+            }
 
 
-            number_of_items--;
+
         }
         
         
