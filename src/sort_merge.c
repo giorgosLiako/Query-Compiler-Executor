@@ -289,18 +289,19 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     if (is_sorted(relR, relR->num_tuples))
         printf("R is sorted\n");
 
-    for (size_t i = 0; i < relR->num_tuples; i++) {
-            printf("%lu\t%lu\n", relR->tuples[i].key, relR->tuples[i].payload);
-    }
+    // for (size_t i = 0; i < relR->num_tuples; i++) {
+    //          printf("%lu\t%lu\n", relR->tuples[i].key, relR->tuples[i].payload);
+    // }
 
 
     alternative_without_recursion(relS);
-    if (is_sorted(relS, relS->num_tuples))
-        printf("S is sorted\n");
-    for (size_t i = 0; i < relS->num_tuples; i++) {
-            printf("%lu\t%lu\n", relS->tuples[i].key, relS->tuples[i].payload);
-    }
+     if (is_sorted(relS, relS->num_tuples))
+         printf("S is sorted\n");
+    // for (size_t i = 0; i < relS->num_tuples; i++) {
+    //          printf("%lu\t%lu\n", relS->tuples[i].key, relS->tuples[i].payload);
+    // }
 
+    printf("check\n");
 
     Join_relations(relR , relS);
 
@@ -436,10 +437,11 @@ void alternative_without_recursion(relation *rel) {
             number_of_buckets--;
 
             if (size*sizeof(uint64_t) < 64*1024) {
-                random_quicksort(relations[(i+1)%2], base, base +size);
-                for (ssize_t j = base; j < base + size; j++) 
+                random_quicksort(relations[(i+1)%2]->tuples, base, base +size-1);
+                for (ssize_t j = base; j < base + size; j++) {
+
                     relations[i%2]->tuples[j] = relations[(i+1)%2]->tuples[j];
-                
+                }
             } else {
                 histogram new_h, new_p;
                 build_histogram(relations[(i+1)%2], &new_h, i, base, size);

@@ -10,6 +10,7 @@ typedef struct list_node{
 
 typedef struct result {
     list_node buffer[65536];
+    uint32_t count;
     struct result *next;
 } result;
 
