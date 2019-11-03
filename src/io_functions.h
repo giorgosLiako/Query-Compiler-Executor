@@ -12,6 +12,6 @@ int count_lines(char *, size_t *);
 
 int parse_file(char *, size_t , relation *);
 
-int write_to_csv(result *);
+int write_to_file(result *);
 
 #endif

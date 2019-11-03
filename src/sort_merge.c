@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <sys/types.h>
+#include <time.h>
 #include "alloc_free.h"
 #include "structs.h"
 #include "result_list.h"
@@ -20,8 +21,6 @@ void recursive_sort(relation *relR, relation *reorderedR, uint8_t byte, int star
     build_histogram(relR, &hist, byte, start, size);
     build_psum(&hist, &psum);
     reorderedR = build_reordered_array(reorderedR, relR, &hist, &psum, byte, start, size);
-
-    debug("byte = %d, start = %d, size = %d", byte, start, size);
 
     for (size_t i = 0 ; i < 256 ; i++) {
         if (hist.array[i]*sizeof(uint64_t) < 64*1024) {
@@ -43,7 +42,6 @@ result *join_relations(relation *relR, relation *relS) {
     size_t count = 0;
 
     while (pr < relR->num_tuples && ps < relS->num_tuples) {
-        printf("R is %lu S is %lu\n",pr,ps);
         if (mark == -1) {
             while (relR->tuples[pr].key < relS->tuples[ps].key) {
                 pr++;
@@ -55,7 +53,7 @@ result *join_relations(relation *relR, relation *relS) {
         }
         if (relR->tuples[pr].key == relS->tuples[ps].key) {
             count++;
-            //check(add_to_result_list(res_list, relR->tuples[pr].payload, relS->tuples[ps].payload) != -1, "Couldn't add to result list!");
+            check(add_to_result_list(res_list, relR->tuples[pr].payload, relS->tuples[ps].payload) != -1, "Couldn't add to result list!");
             ps++;
         } else {
             ps = mark;
@@ -71,7 +69,6 @@ result *join_relations(relation *relR, relation *relS) {
     error:
         return NULL;
 }
-
 
 int iterative_sort(relation *rel) {
     
@@ -138,18 +135,16 @@ int iterative_sort(relation *rel) {
 
 result* SortMergeJoin(relation *relR, relation *relS) {
 
-
     check(iterative_sort(relR) != -1, "Couldn't sort the relation, something came up");
-
+    
     check(iterative_sort(relS) != -1, "Couldn't sort the relation, something came up");
 
+    if (relR->num_tuples < relS->num_tuples)
+        return join_relations(relR , relS);
+    else
+        return join_relations(relS , relR);
     
-     if (relR->num_tuples < relS->num_tuples)
-         return join_relations(relR , relS);
-     else
-         return join_relations(relS , relR);
-    
-    //return join_relations(relR , relS);
+
     error:
         return NULL;
 }

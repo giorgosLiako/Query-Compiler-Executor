@@ -55,9 +55,9 @@ int parse_file(char *filename, size_t lines, relation *rel) {
         return -1;
 }
 
-int write_to_csv(result *res_list) {
+int write_to_file(result *res_list) {
 
-    const char *filename = "results.csv";
+    const char *filename = "results.txt";
 
     FILE *fp = fopen(filename, "w");
     check(fp != NULL, "Couldn't open file for writing");

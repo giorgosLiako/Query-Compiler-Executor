@@ -24,8 +24,9 @@ int main(int argc, char **argv) {
     check(parse_file(argv[2], lines, &S) != -1, "Something went wrong in parsing the input file!");
 
     result_list = SortMergeJoin(&R, &S);
+    check(result_list != NULL, "Something weng wrong in SortMergeJoin");
 
-    //check(write_to_csv(result_list) != -1, "Something went wrong in writing at the output file!");
+    check(write_to_file(result_list) != -1, "Something went wrong in writing at the output file!");
 
     destroy_result_list(result_list);
     FREE(S.tuples);
