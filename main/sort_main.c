@@ -5,68 +5,39 @@
 #include "../src/alloc_free.h"
 #include "../src/sort_merge.h"
 #include "../src/structs.h"
+#include "../src/io_functions.h"
 #include "../src/dbg.h"
 
 
-int main() {
+int main(int argc, char **argv) {
 
-    relation R;
-    relation S;
+    relation R, S;
+    result *result_list = NULL;
+    check(argc == 3, "You should provide 2 input files, corrent syntax is : ./sort_merge <path to input file (1)> <path to input file (2)>");
 
+    size_t lines;
 
-    R.num_tuples = 1000000;
-    R.tuples = MALLOC(tuple, R.num_tuples);
+    check(count_lines(argv[1], &lines) != -1, "Something went wrong in reading the input file!");
+    check(parse_file(argv[1], lines, &R) != -1, "Something went wrong in parsing the input file!");
 
-    S.num_tuples = 1000000;
-    S.tuples = MALLOC(tuple, S.num_tuples);
+    check(count_lines(argv[2], &lines) != -1, "Something went wrong in reading the input file!");
+    check(parse_file(argv[2], lines, &S) != -1, "Something went wrong in parsing the input file!");
 
-    srand(32839832);
+    result_list = SortMergeJoin(&R, &S);
+    check(result_list != NULL, "Something weng wrong in SortMergeJoin");
 
-  //  log_info("ARRAY: KEY\tROW_ID\n");
+    check(write_to_file(result_list) != -1, "Something went wrong in writing at the output file!");
 
-        // R.tuples[0].key = 1;
-        // R.tuples[0].payload = 0;
-
-        // R.tuples[1].key = 1;
-        // R.tuples[1].payload = 1;
-
-        // S.tuples[0].key = 1;
-        // S.tuples[0].payload = 0;
-
-        // S.tuples[1].key = 1;
-        // S.tuples[1].payload = 1;
-
-    for (size_t i = 2 ; i < R.num_tuples ; i++) {
-        uint64_t key = 0;
-        for (int j=0; j<64; j++) {
-            key = key*2 + rand()%2;
-        }
-        
-        // uint64_t key = rand()%10;
-        R.tuples[i].key = key;
-        R.tuples[i].payload = i;
-
-    	//printf("%lu\t%lu\n", key, i);
-    }
-
-    for (size_t i = 2 ; i < S.num_tuples ; i++) {
-        uint64_t key = 0;
-        for (int j=0; j<64; j++) {
-            key = key*2 + rand()%2;
-        }
-        
-        // uint64_t key = rand()%10;
-        S.tuples[i].key = key;
-        S.tuples[i].payload = i;
-
-    	//printf("%lu\t%lu\n", key, i);
-    }
-
-    SortMergeJoin(&S, &R);
-
-    FREE(R.tuples);
+    destroy_result_list(result_list);
     FREE(S.tuples);
+    FREE(R.tuples);
+   
+    return EXIT_SUCCESS;
 
-    return 0;
+    error:
+        destroy_result_list(result_list);
+        FREE(S.tuples);
+        FREE(R.tuples);
+      
+        return EXIT_FAILURE;
 }
-
