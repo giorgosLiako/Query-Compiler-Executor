@@ -33,65 +33,45 @@ void recursive_sort(relation *relR, relation *reorderedR, uint8_t byte, int star
     }
 }
 
-result *join_relations(relation* relR, relation* relS) {
-   
+result *join_relations(relation *relR, relation *relS) {
+
     result *res_list = create_result_list();
-    size_t r = 0 , s = 0 , temp_r = 0; 
+    int mark = -1;
+    size_t pr = 0;
+    size_t ps = 0;
 
-    int flag_r = 0 ;
-    int count = 0;
-    while( r < relR->num_tuples && s < relS->num_tuples )
-    {
-        printf("S is %lu , R is %lu \n",s,r);
-        if ( relR->tuples[r].key == relS->tuples[s].key )
-        {   
+    size_t count = 0;
+
+    while (pr < relR->num_tuples && ps < relS->num_tuples) {
+        printf("R is %lu S is %lu\n",pr,ps);
+        if (mark == -1) {
+            while (relR->tuples[pr].key < relS->tuples[ps].key) {
+                pr++;
+            }
+            while (relR->tuples[pr].key > relS->tuples[ps].key) {
+                ps++;
+            }
+            mark = ps;
+        }
+        if (relR->tuples[pr].key == relS->tuples[ps].key) {
             count++;
-            check(add_to_result_list(res_list, relR->tuples[r].payload, relS->tuples[s].payload) != -1, "Couldn't add to result list!");
-           
-            if (relR->tuples[r+1].key > relR->tuples[r].key)
-            {    
-                s++;
-                if (flag_r == 1)
-                    r = temp_r;
-            }
-            else if (relS->tuples[s+1].key > relS->tuples[s].key)
-            {   
-                if ( flag_r == 0)
-                {
-                    flag_r = 1;
-                    temp_r = r;
-                } 
-                r++;
-            }
-            else
-            {   
-                if ( flag_r == 0)
-                {
-                    flag_r = 1;
-                    temp_r = r;
-                } 
-                r++;
-            }
-
+            //check(add_to_result_list(res_list, relR->tuples[pr].payload, relS->tuples[ps].payload) != -1, "Couldn't add to result list!");
+            ps++;
+        } else {
+            ps = mark;
+            pr++;
+            mark = -1;
         }
-        else if ( relR->tuples[r].key < relS->tuples[s].key)
-        {
-            flag_r = 0 ;
-            r++;
-        }
-        else
-        {
-            flag_r = 0 ;
-            s++;
-        }
-        
     }
-    printf("JOIN COUNT: %d\n",count);
+
+    log_info("Found %lu records", count);
+   
     return res_list;
 
     error:
         return NULL;
 }
+
 
 int iterative_sort(relation *rel) {
     
@@ -164,12 +144,12 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     check(iterative_sort(relS) != -1, "Couldn't sort the relation, something came up");
 
     
-    if (relR->num_tuples > relS->num_tuples)
-        return join_relations(relR , relS);
-    else
-        return join_relations(relS , relR);
+     if (relR->num_tuples < relS->num_tuples)
+         return join_relations(relR , relS);
+     else
+         return join_relations(relS , relR);
     
-
+    //return join_relations(relR , relS);
     error:
         return NULL;
 }

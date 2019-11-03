@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
 
     result_list = SortMergeJoin(&R, &S);
 
-    check(write_to_csv(result_list) != -1, "Something went wrong in writing at the output file!");
+    //check(write_to_csv(result_list) != -1, "Something went wrong in writing at the output file!");
 
     destroy_result_list(result_list);
     FREE(S.tuples);
