@@ -77,14 +77,3 @@ void swap_arrays(relation* r1, relation* r2) {
     r1 = r2;
     r2 = temp;
 }
-
-bool is_sorted(relation *relR, uint64_t num_tuples) {
-
-    for (size_t i = 1 ; i < num_tuples ; i++) {
-        if (relR->tuples[i].key < relR->tuples[i - 1].key) {
-            return false;
-        }
-    }
-
-    return true;
-}

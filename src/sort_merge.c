@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <time.h>
+#include <CUnit/CUnit.h>
+#include <CUnit/Basic.h>
 #include "alloc_free.h"
 #include "structs.h"
 #include "result_list.h"
@@ -133,13 +135,58 @@ int iterative_sort(relation *rel) {
         return -1;
 }
 
+typedef struct sort_test {    
+    relation *relR;
+    relation *relS;
+} sort_test;
+
+sort_test test_var;
+
+void is_sorted() {
+
+    for (size_t i = 1 ; i < test_var.relR->num_tuples ; i++) {
+        CU_ASSERT(test_var.relR->tuples[i].key >= test_var.relR->tuples[i - 1].key)
+    }
+    for (size_t i = 1 ; i < test_var.relS->num_tuples ; i++) {
+        CU_ASSERT(test_var.relS->tuples[i].key >= test_var.relS->tuples[i - 1].key);
+    }
+}
+
+
 result* SortMergeJoin(relation *relR, relation *relS) {
+
+    CU_pSuite pSuite = NULL;
+
+    if (CUE_SUCCESS != CU_initialize_registry()) {
+        goto error;
+    }
+
+    pSuite = CU_add_suite("Sorting test", 0, 0);
+    if (NULL == pSuite) {
+        CU_cleanup_registry();
+        goto error;
+    }
+
+    if (NULL == CU_add_test(pSuite, "Test if both relations are sorted", is_sorted)) {
+        CU_cleanup_registry();
+        goto error;
+    }
 
     check(iterative_sort(relR) != -1, "Couldn't sort the relation, something came up");
     
     check(iterative_sort(relS) != -1, "Couldn't sort the relation, something came up");
 
-    return join_relations(relR , relS);
+    test_var.relR = relR;
+    test_var.relS = relS;
+
+    CU_basic_set_mode(CU_BRM_VERBOSE);
+    CU_basic_run_tests();
+    CU_cleanup_registry();
+
+    if (relR->num_tuples < relS->num_tuples)
+        return join_relations(relR , relS);
+    else
+        return join_relations(relS, relR);
 
     error:
         return NULL;

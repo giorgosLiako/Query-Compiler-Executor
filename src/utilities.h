@@ -11,8 +11,6 @@
 
 #define get_byte(num, byte) ( num >> ( (sizeof(num) << 3) - (byte << 3) ) & 0xFF)
 
-bool is_sorted(relation *, uint64_t);
-
 void build_histogram(relation *, histogram *, uint8_t, int, int);
 
 void build_psum(histogram *, histogram *);

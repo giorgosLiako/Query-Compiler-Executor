@@ -2,11 +2,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
+#include <CUnit/Basic.h>
+#include <CUnit/CUnit.h>
 #include "../src/alloc_free.h"
 #include "../src/sort_merge.h"
 #include "../src/structs.h"
 #include "../src/io_functions.h"
 #include "../src/dbg.h"
+
 
 
 int main(int argc, char **argv) {
@@ -17,16 +20,16 @@ int main(int argc, char **argv) {
 
     size_t lines;
 
-    check(count_lines(argv[1], &lines) != -1, "Something went wrong in reading the input file!");
-    check(parse_file(argv[1], lines, &R) != -1, "Something went wrong in parsing the input file!");
+    check(count_lines(argv[1], &lines) == CUE_SUCCESS, "Something went wrong in reading the input file!");
+    check(parse_file(argv[1], lines, &R) == CUE_SUCCESS, "Something went wrong in parsing the input file!");
 
-    check(count_lines(argv[2], &lines) != -1, "Something went wrong in reading the input file!");
-    check(parse_file(argv[2], lines, &S) != -1, "Something went wrong in parsing the input file!");
+    check(count_lines(argv[2], &lines) == CUE_SUCCESS, "Something went wrong in reading the input file!");
+    check(parse_file(argv[2], lines, &S) == CUE_SUCCESS, "Something went wrong in parsing the input file!");
 
     result_list = SortMergeJoin(&R, &S);
     check(result_list != NULL, "Something weng wrong in SortMergeJoin");
 
-    check(write_to_file(result_list) != -1, "Something went wrong in writing at the output file!");
+    check(write_to_file(result_list) == CUE_SUCCESS, "Something went wrong in writing at the output file!");
 
     destroy_result_list(result_list);
     FREE(S.tuples);

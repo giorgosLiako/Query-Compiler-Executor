@@ -42,7 +42,7 @@ build:
 # The Unit Tests
 .PHONY: tests
 main: $(TARGET)
-	$(CC) $(CFLAGS) -o sort_merge $(MAIN_SRC) $(TARGET) 
+	$(CC) $(CFLAGS) -o sort_merge $(MAIN_SRC) $(TARGET) -lcunit 
 
 
 valgrind:
