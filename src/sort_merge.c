@@ -14,26 +14,6 @@
 #include "quicksort.h"
 
 
-void recursive_sort(relation *relR, relation *reorderedR, uint8_t byte, int start, int size) {
-   
-    if (byte > 8)
-        return;
-
-    histogram hist, psum;
-    build_histogram(relR, &hist, byte, start, size);
-    build_psum(&hist, &psum);
-    reorderedR = build_reordered_array(reorderedR, relR, &hist, &psum, byte, start, size);
-
-    for (size_t i = 0 ; i < 256 ; i++) {
-        if (hist.array[i]*sizeof(uint64_t) < 64*1024) {
-            random_quicksort(reorderedR->tuples, start + psum.array[i], start + psum.array[i] + hist.array[i]);
-        }
-        else if (hist.array[i] != 0 && byte != 9) 
-            recursive_sort(reorderedR, relR, byte + 1, start + psum.array[i], hist.array[i]); //to byte++ pou xes me kseskise xthes
-        
-    }
-}
-
 result *join_relations(relation *relR, relation *relS) {
 
     result *res_list = create_result_list();
