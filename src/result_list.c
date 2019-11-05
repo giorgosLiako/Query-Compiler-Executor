@@ -5,6 +5,7 @@
 #include "dbg.h"
 #include "result_list.h"
 
+//function to create a result list
 result *create_result_list() {
 
     result *list = MALLOC(result, 1);
@@ -17,6 +18,7 @@ result *create_result_list() {
         return NULL;
 }
 
+//function to destroy a result list
 void destroy_result_list(result *list) {
 
     if (!list) {
@@ -39,6 +41,7 @@ void destroy_result_list(result *list) {
     FREE(list);
 }
 
+//function to add a node to the result list
 int add_to_result_list(result *list, uint64_t row_id_1, uint64_t row_id_2) {
 
     row_ids r_ids;
@@ -49,7 +52,7 @@ int add_to_result_list(result *list, uint64_t row_id_1, uint64_t row_id_2) {
         list_node *tmp = list->head;
         list_node *prev;
         while (tmp != NULL) {
-            if (tmp->count < BUF_SIZE) {
+            if (tmp->count < BUF_SIZE) { //found space to the buffer
                 tmp->buffer[tmp->count++] = r_ids;
                 return 0;
             }

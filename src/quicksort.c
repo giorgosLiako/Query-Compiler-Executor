@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include "quicksort.h"
 
+//function to produce a random number between low and high
 ssize_t random_in_range(ssize_t low, ssize_t high) {
 
     ssize_t r = rand();
@@ -11,21 +12,22 @@ ssize_t random_in_range(ssize_t low, ssize_t high) {
     return r % (high - low + 1) + low;
 }
 
+//function to swap two tuples 
 void swap(tuple *tuples, ssize_t i, ssize_t j) {
     tuple tup = tuples[i];
     tuples[i] = tuples[j];
     tuples[j] = tup;
 }
 
-
+//function to define the partition
 ssize_t hoare_partition(tuple *tuples, ssize_t low, ssize_t high) {
 
     ssize_t i = low - 1;
     ssize_t j = high + 1;
 
-    ssize_t random = random_in_range(low, high);
+    ssize_t random = random_in_range(low, high);//pick a random number
 
-    swap(tuples, low, random);
+    swap(tuples, low, random); //swap tuple in index low with tuple in index random
 
     uint64_t pivot = tuples[high].key;
 
@@ -47,6 +49,7 @@ ssize_t hoare_partition(tuple *tuples, ssize_t low, ssize_t high) {
     }
 }
 
+//function to execute a quicksort
 void random_quicksort(tuple *tuples, ssize_t low, ssize_t high) {
 
     if (low >= high) {

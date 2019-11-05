@@ -4,6 +4,7 @@
 #include "queue.h"
 #include "dbg.h"
 
+//function to initialize a queue
 queue* new_queue() {
     queue* new_q = MALLOC(queue, 1);
     check_mem(new_q);
@@ -18,6 +19,7 @@ queue* new_queue() {
         return NULL;
 }
 
+//function to allocate memory and set a new item 
 item* new_item(ssize_t base, ssize_t size) {
     item* new_i = MALLOC(item, 1);
     check_mem(new_i);
@@ -32,11 +34,13 @@ item* new_item(ssize_t base, ssize_t size) {
 
 }
 
+//function to delete an item of the queue
 void delete_item(item* i) {
     FREE(i);
     return;
 }
 
+//function to insert a new item in the queue
 void push(queue* q, item* new_item) {
     if (new_item == NULL) return;
 
@@ -61,6 +65,7 @@ void push(queue* q, item* new_item) {
         return;
 }
 
+//function to pop an item of the queue
 item* pop(queue *q){
     if (q->size == 0) goto error;
     item* temp_item;
@@ -88,10 +93,12 @@ item* pop(queue *q){
 
 }
 
+//function to return the size of the queue
 int size(queue* q) {
      return q->size;
 }
 
+//function to delete the queue
 void delete_queue(queue *q) {
     FREE(q);
     return;
