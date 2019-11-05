@@ -2,8 +2,7 @@
 #define SORT_MERGE_H
 
 #include "structs.h"
-#include "result_list.h"
 
-result* SortMergeJoin(relation *relR, relation *relS);
+void SortMergeJoin(relation *relR, relation *relS);
 
 #endif

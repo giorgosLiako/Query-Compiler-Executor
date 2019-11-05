@@ -5,7 +5,6 @@
 #include "alloc_free.h"
 #include "io_functions.h"
 #include "structs.h"
-#include "result_list.h"
 
 //struct for CUnit
 typedef struct IO_test {
@@ -16,7 +15,6 @@ typedef struct IO_test {
     size_t n;
     ssize_t nread;
     relation *rel;
-    result *res_list;
 } IO_test;
 
 IO_test io_test_var;
@@ -158,51 +156,6 @@ int parse_file(char *fname, size_t lin, relation *r) {
     //save the data to the relation
     r->num_tuples = io_test_var.rel->num_tuples;
     r->tuples = io_test_var.rel->tuples;
-
-    FREE(io_test_var.filename);
-    return CU_get_error();
-}
-
-//function for CUnit : writes the file
-void file_write() {
-    
-    list_node *current = io_test_var.res_list->head;
-    while (current != NULL) {
-        for (size_t i = 0 ; i < current->count ; i++) {
-            CU_ASSERT(0 != fprintf(io_test_var.fp, "%lu,%lu\n", current->buffer[i].row_id_1, current->buffer[i].row_id_2)); 
-        }
-        current = current->next;
-    }
-}
-
-//function that writes to a file
-int write_to_file(result *res) {
-
-    CU_pSuite pSuite = NULL;
-    //initialize the CU suite
-    if (CUE_SUCCESS != CU_initialize_registry()) {
-        return CU_get_error();
-    }
-    //open the file
-    pSuite = CU_add_suite("File_handle_suite", file_open_write, close_file);
-    if (NULL == pSuite) {
-        CU_cleanup_registry();
-        return CU_get_error();
-    }
-
-    io_test_var.filename = MALLOC(char, strlen("results.txt") + 1);
-    strncpy(io_test_var.filename, "results.txt", strlen("results.txt") + 1);
-    //call the CU function that writes to the file
-    if (NULL == CU_add_test(pSuite, "test for file writing", file_write)) {
-        CU_cleanup_registry();
-        return CU_get_error();
-    }
-
-    io_test_var.res_list = res;
-    //run the test
-    CU_basic_set_mode(CU_BRM_VERBOSE);
-    CU_basic_run_tests();
-    CU_cleanup_registry();
 
     FREE(io_test_var.filename);
     return CU_get_error();
