@@ -80,11 +80,12 @@ int count_lines(char *fname, size_t *lin) {
     io_test_var.filename = MALLOC(char, strlen(fname) + 1);
     strncpy(io_test_var.filename, fname, strlen(fname) + 1);
 
-    if (NULL == CU_add_test(pSuite, "test for counting file lines", file_read_lines)) {
+    if (NULL == CU_add_test(pSuite, "Test for counting file lines", file_read_lines)) {
         CU_cleanup_registry();
         return CU_get_error();
     }
 
+    io_test_var.lines = 0;
     io_test_var.n = 0;
     io_test_var.lineptr = NULL;
 
@@ -180,7 +181,7 @@ int write_to_file(result *res) {
     io_test_var.filename = MALLOC(char, strlen("results.txt") + 1);
     strncpy(io_test_var.filename, "results.txt", strlen("results.txt") + 1);
 
-    if (NULL == CU_add_test(pSuite, "test for file writing", file_write)) {
+    if (NULL == CU_add_test(pSuite, "Test for file writing", file_write)) {
         CU_cleanup_registry();
         return CU_get_error();
     }

@@ -163,7 +163,7 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     CU_basic_run_tests();
     CU_cleanup_registry();
 
-    if (relR->num_tuples < relS->num_tuples)
+    if (relR->num_tuples <= relS->num_tuples)
         return join_relations(relR , relS);
     else
         return join_relations(relS, relR);
