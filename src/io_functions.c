@@ -89,6 +89,7 @@ int count_lines(char *fname, size_t *lin) {
         return CU_get_error();
     }
 
+    io_test_var.lines = 0;
     io_test_var.n = 0;
     io_test_var.lines = 0;
     io_test_var.lineptr = NULL;
