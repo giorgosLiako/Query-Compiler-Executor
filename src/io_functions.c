@@ -12,6 +12,7 @@ typedef struct IO_test {
     char *filename;
     size_t lines;
     char *lineptr;
+    char *str_lines;
     size_t n;
     ssize_t nread;
     relation *rel;
@@ -61,11 +62,15 @@ void file_read_lines() {
             io_test_var.lines++;
         }
     }
+    char *endptr;
+    long num_lines = strtol(io_test_var.str_lines, &endptr, 10);
+    CU_ASSERT_FATAL(endptr != NULL);
+    CU_ASSERT_FATAL(io_test_var.lines == (size_t) num_lines);
     FREE(io_test_var.lineptr);
 }
 
 //function that counts the lines of a file
-int count_lines(char *fname, size_t *lin) {
+int count_lines(char *fname, char *str_lines, size_t *lin) {
 
     CU_pSuite pSuite = NULL;
     //initilize CU suite
@@ -90,6 +95,7 @@ int count_lines(char *fname, size_t *lin) {
     io_test_var.lines = 0;
     io_test_var.n = 0;
     io_test_var.lines = 0;
+    io_test_var.str_lines = str_lines;
     io_test_var.lineptr = NULL;
     //run the test
     CU_basic_set_mode(CU_BRM_VERBOSE);

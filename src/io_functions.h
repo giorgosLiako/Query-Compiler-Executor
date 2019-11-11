@@ -7,7 +7,7 @@
 #include "dbg.h"
 #include "structs.h"
 
-int count_lines(char *, size_t *);
+int count_lines(char *, char *, size_t *);
 
 int parse_file(char *, size_t , relation *);
 

@@ -48,8 +48,10 @@ void join_relations(relation *relR, relation *relS) {
             ps++;
         
         } else { //the keys of the relations are different
-            ps = mark;
             pr++;
+            if (relR->tuples[pr].key == relS->tuples[ps - 1].key) {
+                ps = (size_t) mark;
+            }
             mark = -1; //initialize mark
         }
     }
@@ -64,6 +66,10 @@ void join_relations(relation *relR, relation *relS) {
 
 //functions that sorts iterative one relation
 int iterative_sort(relation *rel) {
+    if ( rel->num_tuples * sizeof(tuple) + sizeof(uint64_t) < 64*1024) {
+        random_quicksort(rel->tuples, 0, rel->num_tuples - 1);
+        return 0;
+    }
     
     relation *reordered = allocate_reordered_array(rel);
     queue *q = new_queue();
@@ -90,11 +96,18 @@ int iterative_sort(relation *rel) {
     }
 
     ssize_t i;
+    int count = 1;
     //above we execute the routine for the first byte
     //now for all the other bytes
     for (i = 2; i < 9; i++) { //for each byte of 2 to 8
         
         int number_of_buckets = size(q);
+
+        if (number_of_buckets > 0) {
+            count++;
+        } else {
+            break;
+        }
         //the size of the queue is the number of the buckets
         while (number_of_buckets) { //for each bucket
     
@@ -126,6 +139,12 @@ int iterative_sort(relation *rel) {
             }
         }
     }   
+    if (count % 2 == 1) {
+        for (size_t i = 0; i < rel->num_tuples; i++){
+             rel->tuples[i] = relations[1]->tuples[i];
+        }
+        
+    }
     //free allocated memory
     free_reordered_array(reordered);
     delete_queue(q);
@@ -175,6 +194,10 @@ void SortMergeJoin(relation *relR, relation *relS) {
         goto error;
     }
 
+    clock_t start,end;
+
+    start = clock();
+
     check(iterative_sort(relR) != -1, "Couldn't sort the relation, something came up");
     
     check(iterative_sort(relS) != -1, "Couldn't sort the relation, something came up");
@@ -192,6 +215,10 @@ void SortMergeJoin(relation *relR, relation *relS) {
         join_relations(relR , relS);
     else
         join_relations(relS, relR);
+   
+    end = clock();
+
+    log_info("Time Elapsed for SortMergeJoin = %lf", ((double) (end - start) / CLOCKS_PER_SEC));
 
     error:
         return;
