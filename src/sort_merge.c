@@ -7,21 +7,22 @@
 #include <CUnit/Basic.h>
 #include "alloc_free.h"
 #include "structs.h"
-#include "result_list.h"
 #include "dbg.h"
 #include "utilities.h"
 #include "queue.h"
 #include "quicksort.h"
 
 //function to join two relations
-result *join_relations(relation *relR, relation *relS) {
+void join_relations(relation *relR, relation *relS) {
 
-    result *res_list = create_result_list(); //initialize the list of results
     int mark = -1;  //mark for duplicates
     size_t pr = 0; //pointer to relation R
     size_t ps = 0; // pointer to relation S
 
     size_t count = 0; //counter of founded joins
+
+    FILE *fp = fopen("results.txt", "w");
+    check(fp != NULL, "Failed to open file");
 
     //loop while we dont reach the end of none array
     while (pr < relR->num_tuples && ps < relS->num_tuples) {
@@ -43,22 +44,24 @@ result *join_relations(relation *relR, relation *relS) {
         if (relR->tuples[pr].key == relS->tuples[ps].key) {
             //count the join and add it to the result list    
             count++;
-            check(add_to_result_list(res_list, relR->tuples[pr].payload, relS->tuples[ps].payload) != -1, "Couldn't add to result list!");
+            fprintf(fp, "%lu, %lu\n", relR->tuples[pr].payload, relS->tuples[ps].payload);
             ps++;
         
         } else { //the keys of the relations are different
-            ps = mark;
             pr++;
+            if (relR->tuples[pr].key == relS->tuples[ps - 1].key) {
+                ps = (size_t) mark;
+            }
             mark = -1; //initialize mark
         }
     }
 
     log_info("Found %lu records", count);
-   
-    return res_list;
+
+    fclose(fp);
 
     error:
-        return NULL;
+        return;
 }
 
 //functions that sorts iterative one relation
@@ -172,7 +175,7 @@ void is_sorted() {
     }
 }
 
-result* SortMergeJoin(relation *relR, relation *relS) {
+void SortMergeJoin(relation *relR, relation *relS) {
 
     CU_pSuite pSuite = NULL;
     //initialize CU suite
@@ -191,6 +194,10 @@ result* SortMergeJoin(relation *relR, relation *relS) {
         goto error;
     }
 
+    clock_t start,end;
+
+    start = clock();
+
     check(iterative_sort(relR) != -1, "Couldn't sort the relation, something came up");
     
     check(iterative_sort(relS) != -1, "Couldn't sort the relation, something came up");
@@ -205,10 +212,14 @@ result* SortMergeJoin(relation *relR, relation *relS) {
     //join the two relations
     //the first argument of function join_Relations must be the relation with the least num_tuples
     if (relR->num_tuples < relS->num_tuples)
-        return join_relations(relR , relS);
+        join_relations(relR , relS);
     else
-        return join_relations(relS, relR);
+        join_relations(relS, relR);
+   
+    end = clock();
+
+    log_info("Time Elapsed for SortMergeJoin = %lf", ((double) (end - start) / CLOCKS_PER_SEC));
 
     error:
-        return NULL;
+        return;
 }

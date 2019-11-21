@@ -15,34 +15,27 @@
 int main(int argc, char **argv) {
 
     relation R, S;
-    result *result_list = NULL;
     //check id a macro on dbg.h 
-    check(argc == 3, "You should provide 2 input files, corrent syntax is : ./sort_merge <path to input file (1)> <path to input file (2)>");
+    check(argc == 5, "You should provide 2 input files, corrent syntax is : ./sort_merge <path to input file (1)> <path to input file (2)>");
 
     size_t lines;
     //take each input file , count the lines and save the data in a relation
-    check(count_lines(argv[1], &lines) == CUE_SUCCESS, "Something went wrong in reading the input file!");
+    check(count_lines(argv[1], argv[2], &lines) == CUE_SUCCESS, "Something went wrong in reading the input file!");
     check(parse_file(argv[1], lines, &R) == CUE_SUCCESS, "Something went wrong in parsing the input file!");
 
-    check(count_lines(argv[2], &lines) == CUE_SUCCESS, "Something went wrong in reading the input file!");
-    check(parse_file(argv[2], lines, &S) == CUE_SUCCESS, "Something went wrong in parsing the input file!");
+    check(count_lines(argv[3], argv[4], &lines) == CUE_SUCCESS, "Something went wrong in reading the input file!");
+    check(parse_file(argv[3], lines, &S) == CUE_SUCCESS, "Something went wrong in parsing the input file!");
 
     //take the two relations and do sort merge join
-    result_list = SortMergeJoin(&R, &S);
-    check(result_list != NULL, "Something weng wrong in SortMergeJoin");
-
-    //write the results in the results file
-    check(write_to_file(result_list) == CUE_SUCCESS, "Something went wrong in writing at the output file!");
+    SortMergeJoin(&R, &S);
 
     //free the allocated memory and exit
-    destroy_result_list(result_list);
     FREE(S.tuples);
     FREE(R.tuples);
    
     return EXIT_SUCCESS;
 
     error:
-        destroy_result_list(result_list);
         FREE(S.tuples);
         FREE(R.tuples);
       
