@@ -13,15 +13,10 @@ typedef struct relation {
     uint64_t num_tuples;
 } relation;
 
-
-typedef struct histogram {
-    int32_t array[256];
-} histogram;
-
-
-typedef struct queue_node {
-    histogram *hist;
-    histogram *psum;
-} queue_node;
+typedef struct metadata_array {
+    uint64_t tuples;
+    uint64_t columns;
+    relation **data;
+} metadata_array;
 
 #endif

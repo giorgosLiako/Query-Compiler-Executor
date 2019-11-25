@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "alloc_free.h"
+#include "histogram.h"
 #include "dbg.h"
 #include "structs.h"
 
@@ -22,5 +23,7 @@ relation* build_reordered_array(relation *, relation *, histogram *, histogram *
 void free_reordered_array(relation *);
 
 void swap_arrays(relation *, relation *);
+
+int read_relations(metadata_array *);
 
 #endif
