@@ -26,4 +26,6 @@ void swap_arrays(relation *, relation *);
 
 int read_relations(metadata_array *);
 
+predicate parser();
+
 #endif

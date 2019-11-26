@@ -19,4 +19,21 @@ typedef struct metadata_array {
     relation **data;
 } metadata_array;
 
+typedef struct relation_column {
+    int relation;
+    int column;
+} relation_column;
+
+typedef struct predicate{
+    int type;
+    relation_column* first;
+    void* second;
+    char operator;
+} predicate;
+
+typedef struct query {
+    int* relations;
+
+} query;
+
 #endif
