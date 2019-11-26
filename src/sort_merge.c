@@ -3,8 +3,6 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <time.h>
-#include <CUnit/CUnit.h>
-#include <CUnit/Basic.h>
 #include "alloc_free.h"
 #include "structs.h"
 #include "dbg.h"
