@@ -33,7 +33,7 @@ $(TARGET): build $(OBJECTS)
 	ranlib $@
 
 $(SO_TARGET): $(TARGET) $(OBJECTS)
-	$(CC) -shared -o sort_merge $(OBJECTS)
+	$(CC) -shared -o queries $(OBJECTS)
 
 build:
 	@mkdir -p build

@@ -9,6 +9,7 @@
 #include "histogram.h"
 #include "dbg.h"
 #include "structs.h"
+#include "DArray.h"
 
 #define get_byte(num, byte) ( num >> ( (sizeof(num) << 3) - (byte << 3) ) & 0xFF)
 
@@ -24,7 +25,7 @@ void free_reordered_array(relation *);
 
 void swap_arrays(relation *, relation *);
 
-int read_relations(metadata_array *);
+int read_relations(DArray *);
 
 predicate parser();
 
