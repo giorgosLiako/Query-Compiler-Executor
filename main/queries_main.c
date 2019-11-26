@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <time.h>
-#include <CUnit/Basic.h>
-#include <CUnit/CUnit.h>
 #include "../src/alloc_free.h"
 #include "../src/sort_merge.h"
 #include "../src/structs.h"

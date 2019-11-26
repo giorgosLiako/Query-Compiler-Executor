@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <sys/types.h>
 #include "quicksort.h"
 
 //function to produce a random number between low and high
