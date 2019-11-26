@@ -13,10 +13,10 @@ typedef struct relation {
     uint64_t num_tuples;
 } relation;
 
-typedef struct metadata_array {
+typedef struct metadata {
     uint64_t tuples;
     uint64_t columns;
     relation **data;
-} metadata_array;
+} metadata;
 
 #endif

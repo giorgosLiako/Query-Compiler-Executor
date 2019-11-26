@@ -8,17 +8,19 @@
 #include "../src/structs.h"
 #include "../src/dbg.h"
 #include "../src/utilities.h"
+#include "../src/DArray.h"
 
 
 int main() {
 
-    metadata_array *arr = MALLOC(metadata_array, 1);
-    check(read_relations(arr) != -1, "Something went wrong in reading the relations");
+    DArray *metadata_arr = DArray_create(sizeof(metadata), 10);
 
-    FREE(arr);
+    check(read_relations(metadata_arr) != -1, "Something went wrong in reading the relations");
+
+    FREE(metadata_arr);
     return EXIT_SUCCESS;
 
     error:
-        FREE(arr);
+        FREE(metadata_arr);
         return EXIT_FAILURE;
 }

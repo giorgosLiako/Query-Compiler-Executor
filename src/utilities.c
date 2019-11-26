@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include "utilities.h"
 #include "histogram.h"
+#include "DArray.h"
 
 //function to build a histogram
 void build_histogram(relation *rel, histogram *hist, uint8_t wanted_byte, int start, int size) {
@@ -97,18 +98,18 @@ void swap_arrays(relation* r1, relation* r2) {
 }
 
 
-static inline void fill_arrays(metadata_array *arr, uint64_t *mapped_file) {
+static inline void fill_data(metadata *m_data, uint64_t *mapped_file) {
     
-    arr->tuples = *mapped_file++;
-    arr->columns = *mapped_file++;
-    arr->data = MALLOC(relation *, arr->columns);
+    m_data->tuples = *mapped_file++;
+    m_data->columns = *mapped_file++;
+    m_data->data = MALLOC(relation *, m_data->columns);
 
-    for (size_t j = 0 ; j < arr->columns ; j++) {
+    for (size_t j = 0 ; j < m_data->columns ; j++) {
         relation *rel = MALLOC(relation, 1);
-        rel->num_tuples = arr->tuples;
-        rel->tuples = MALLOC(tuple, arr->tuples);
-        arr->data[j] = rel;
-        for (size_t i = 0 ; i < arr->tuples ; i++) {
+        rel->num_tuples = m_data->tuples;
+        rel->tuples = MALLOC(tuple, m_data->tuples);
+        m_data->data[j] = rel;
+        for (size_t i = 0 ; i < m_data->tuples ; i++) {
             rel->tuples[i].key = *mapped_file++;
             rel->tuples[i].payload = i;
         }
@@ -116,7 +117,7 @@ static inline void fill_arrays(metadata_array *arr, uint64_t *mapped_file) {
 }
 
 
-int read_relations(metadata_array *arr) {
+int read_relations(DArray *metadata_arr) {
 
     char *linptr = NULL;
     size_t n = 0;
@@ -137,13 +138,18 @@ int read_relations(metadata_array *arr) {
         uint64_t *mapped_file = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
         check(mapped_file != MAP_FAILED, "mmap failed");
 
-        fill_arrays(arr, mapped_file);
+        metadata m_data;
+
+        fill_data(&m_data, mapped_file);
+
+        DArray_push(metadata_arr, &m_data);
 
         debug("printing arrays for debugging");
 
-        for (size_t j = 0 ; j < arr->columns ; j++) {
-            for (size_t i = 0 ; i < arr->tuples ; i++) {
-                debug("%lu", arr->data[j]->tuples[i].key);
+        metadata *tmp_data = (metadata *) DArray_get(metadata_arr, 0);
+        for (size_t j = 0 ; j < tmp_data->columns ; j++) {
+            for (size_t i = 0 ; i < tmp_data->tuples ; i++) {
+                debug("%lu", tmp_data->data[j]->tuples[i].key);
             }
             debug("");
         }
