@@ -176,14 +176,14 @@ void parse_relations(char *string, query *q) {
     int* relations = (int*) malloc((spaces + 1) * sizeof(int));
 
     //parse 
-    int current_relation;
-    char rest_relations[128], temp_relations[128];
-
-    strcpy(temp_relations, string);
-    for (int i = 0; i < spaces + 1; i++) {
-        sscanf(temp_relations, "%d %s", &current_relation, rest_relations);
-        strcpy(temp_relations, rest_relations);
-        relations[i] = current_relation;
+    char current_relation[16];
+    char* ptr = string;
+    int advance, i = 0;
+    while (sscanf(ptr, "%15[^ ]%n", current_relation, &advance) == 1) {
+        ptr += advance;
+        relations[i++] = (int) strtol(current_relation, NULL, 10);
+        if (*ptr != ' ') break;
+        ptr++;
     }
     
     q->relations = relations;
@@ -193,19 +193,19 @@ void parse_relations(char *string, query *q) {
 void parse_predicates(char *string, query *q) {
     int ampersands = 0;
     for (size_t i = 0; string[i] != '\0'; i++) 
-        if (string[i] == 46) ampersands++;
+        if (string[i] == '&') ampersands++;
     
 
     predicate *predicates = (predicate*) malloc((ampersands + 1) * sizeof(predicate));
     
-    char current_predicate[128], rest_predicate[128], temp_predicate[128];
-    strcpy(temp_predicate, string);
-    for (int i = 0; i < ampersands + 1; i++) {
-        sscanf(temp_predicate, "%s&%s", current_predicate, rest_predicate);
-        strcpy(temp_predicate, rest_predicate);
+    char current_predicate[128];
 
-        int v1,v2,v3,v4;
-        char operator;
+    int v1,v2,v3,v4;
+    char operator;
+    char *ptr = string;
+    int advance, i = 0;
+    while (sscanf(ptr, "%127[^&]%n", current_predicate, &advance) == 1) {
+        ptr += advance;
 
         if (sscanf(current_predicate, "%d.%d%c%d.%d", &v1, &v2, &operator, &v3, &v4) == 5){
             relation_column *first = (relation_column*) malloc(sizeof(relation_column));
@@ -219,7 +219,7 @@ void parse_predicates(char *string, query *q) {
             predicates[i].type = 0;
             predicates[i].first = first;
             predicates[i].second = second;
-            predicates[i].operator = operator;
+            predicates[i++].operator = operator;
 
         } else if (sscanf(current_predicate, "%d.%d%c%d", &v1, &v2, &operator, &v3) == 4) {
             relation_column *first = (relation_column*) malloc(sizeof(relation_column));
@@ -232,9 +232,13 @@ void parse_predicates(char *string, query *q) {
             predicates[i].type = 1;
             predicates[i].first = first;
             predicates[i].second = second;
-            predicates[i].operator = operator;
+            predicates[i++].operator = operator;
         }
+        if (*ptr != '&') break;
+        ptr++;
     }
+    
+
     q->predicates = predicates;
     q->predicates_size = ampersands + 1;
     
@@ -248,14 +252,17 @@ void parse_select(char* string, query *q) {
 
     relation_column* selects = (relation_column*) malloc((spaces + 1) * sizeof(relation_column));
 
-    char temp_select[128], rest_select[128];
-    strcpy(temp_select, string);
-    for (int i = 0; i < spaces + 1; i++) {
-        int relation, column;
-        sscanf(temp_select, "%d.%d %s", &relation, &column, rest_select);
-        strcpy(temp_select, rest_select);
+    char temp_select[128];
+    int relation, column;
+    char *ptr = string;
+    int advance, i = 0;
+    while (sscanf(ptr, "%127[^ ]%n", temp_select, &advance) == 1) {
+        ptr += advance;
+        sscanf(temp_select, "%d.%d", &relation, &column);
         selects[i].relation = relation;
-        selects[i].column = column;
+        selects[i++].column = column;
+        if (*ptr != ' ') break;
+        ptr++;
     }
 
     q->select = selects;
@@ -268,9 +275,10 @@ DArray* parser(){
     char* line_ptr = NULL;
     size_t n = 0;
     int characters;
-    while ((characters = getline(&line_ptr, &n, stdin)) != 1 && (characters != -1) ){
+    while ((characters = getline(&line_ptr, &n, stdin)) != -1){
+        if (strchr(line_ptr, 'F')) break;
         char relations[128], predicates[128], select[128];
-        sscanf(line_ptr, "%s|%s|%s", relations, predicates, select);
+        sscanf(line_ptr, "%[0-9 ]%*[|]%[0-9.=<>&]%*[|]%[0-9. ]", relations, predicates, select);
         
         query new_query;
         parse_relations(relations, &new_query);
@@ -286,33 +294,32 @@ DArray* parser(){
 
 
 void print_relations(int* relations, size_t size){
-    printf("Relations: ");
+    printf("Relations: \n\t");
     for (size_t i = 0; i < size; i++) {
-        printf("%d", relations[i]);
+        printf("%d ", relations[i]);
     }
     printf("\n");
 }
 
 void print_predicates(predicate* predicates, size_t size) {
-    printf("Predicates: ");
+    printf("Predicates: \n");
     for (size_t i = 0; i < size; i++) {
         if (predicates[i].type == 0) {
             relation_column *temp = (relation_column*) predicates[i].second;
-            printf("%d.%d %c %d.%d", predicates[i].first->relation, predicates[i].first->column, predicates[i].operator
+            printf("\t%d.%d %c %d.%d\n", predicates[i].first->relation, predicates[i].first->column, predicates[i].operator
                     , temp->relation, temp->column);
         } else if (predicates[i].type == 1) {
             int *temp = (int*) predicates[i].second;
-            printf("%d.%d %c %d ", predicates[i].first->relation, predicates[i].first->column, predicates[i].operator
+            printf("\t%d.%d %c %d\n", predicates[i].first->relation, predicates[i].first->column, predicates[i].operator
                     , *temp);
         }
     }
-    printf("\n");
 }
 
 void print_select(relation_column* r_c, size_t size){
-    printf("Select: ");
+    printf("Select: \n");
     for (size_t i = 0; i < size; i++){
-        printf("%d.%d ", r_c->relation, r_c->column);
+        printf("\t%d.%d ", r_c[i].relation, r_c[i].column);
     }
     printf("\n");
     

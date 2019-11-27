@@ -15,7 +15,7 @@ int main() {
 
     // DArray *metadata_arr = DArray_create(sizeof(metadata), 10);
     DArray *query_list = parser();
-    printf("test\n");
+    //printf("%d t\n",DArray_count(metadata_arr));
     for (size_t i = 0; i < DArray_count(query_list); i++) {
         query *tmp_data = (query*) DArray_get(query_list, i);
         print_relations(tmp_data->relations, tmp_data->relations_size);
@@ -28,7 +28,7 @@ int main() {
     // FREE(metadata_arr);
     return EXIT_SUCCESS;
 
-    error:
-        // FREE(metadata_arr);
-        return EXIT_FAILURE;
+    // error:
+    //     FREE(metadata_arr);
+    //     return EXIT_FAILURE;
 }
