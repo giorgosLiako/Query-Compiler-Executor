@@ -1,6 +1,6 @@
 #Kostas Chasialis Makefile (project 1)
 
-CFLAGS=-g3 -O2 -Wall -Wextra -Wchkp -D_FORTIFY_SOURCE=2 -DDEBUG $(OPTFLAGS)
+CFLAGS=-g3 -O2 -Wall -Wchkp -Wextra -D_FORTIFY_SOURCE=2 -DDEBUG $(OPTFLAGS)
 LDFLAGS=$(OPTLIBS)
 PREFIX?=/usr/local
 
@@ -16,8 +16,11 @@ MAIN_SRC=$(wildcard main/*_main.c)
 TARGET=build/sort_merge.a
 SO_TARGET=$(patsubst %.a,%.so,$(TARGET))
 
-OS=$(shell lsb_release -si)
-ifeq ($(OS),Ubuntu)
+
+
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S), Linux)
 	LDLIBS=-L./build -lm
 endif
 

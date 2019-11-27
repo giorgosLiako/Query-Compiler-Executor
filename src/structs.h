@@ -2,6 +2,7 @@
 #define STRUCTS_H
 
 #include <stdint.h>
+#include "DArray.h"
 
 typedef struct tuple {
     uint64_t key;
@@ -33,7 +34,11 @@ typedef struct predicate{
 
 typedef struct query {
     int* relations;
-
+    int relations_size;
+    predicate* predicates;
+    int predicates_size;
+    relation_column* select;
+    int select_size;
 } query;
 
 #endif
