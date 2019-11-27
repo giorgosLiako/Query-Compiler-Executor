@@ -45,7 +45,7 @@ build:
 # The Unit Tests
 .PHONY: tests
 main: $(TARGET)
-	$(CC) $(CFLAGS) -o queries $(MAIN_SRC) $(TARGET) -lcunit 
+	$(CC) $(CFLAGS) -o queries $(MAIN_SRC) $(TARGET) 
 
 
 valgrind:
@@ -73,8 +73,4 @@ check:
 	@egrep $(BADFUNCS) $(SOURCES) || true
 
 count:
-	mv src/bstrlib.c .
-	mv src/bstrlib.h .
-	wc src/*.c src/*.h tests/*.c -l
-	mv bstrlib.c src/
-	mv bstrlib.h src/
+	wc src/*.c src/*.h main/*.c -l
