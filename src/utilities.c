@@ -196,7 +196,7 @@ void parse_predicates(char *string, query *q) {
         if (string[i] == 46) ampersands++;
     
 
-    predicate *predicates = (predicate*) malloc((ampersands + 1) * sizeof(predicates));
+    predicate *predicates = (predicate*) malloc((ampersands + 1) * sizeof(predicate));
     
     char current_predicate[128], rest_predicate[128], temp_predicate[128];
     strcpy(temp_predicate, string);
@@ -272,11 +272,11 @@ DArray* parser(){
         char relations[128], predicates[128], select[128];
         sscanf(line_ptr, "%s|%s|%s", relations, predicates, select);
         
-        query *new_query = (query*) malloc(sizeof(query));
-        parse_relations(relations, new_query);
-        parse_predicates(predicates, new_query);
-        parse_select(select, new_query);
-        DArray_push(queries, new_query);
+        query new_query;
+        parse_relations(relations, &new_query);
+        parse_predicates(predicates, &new_query);
+        parse_select(select, &new_query);
+        DArray_push(queries, &new_query);
     }
     if (characters == -1) {
         return NULL;
@@ -300,7 +300,7 @@ void print_predicates(predicate* predicates, size_t size) {
             relation_column *temp = (relation_column*) predicates[i].second;
             printf("%d.%d %c %d.%d", predicates[i].first->relation, predicates[i].first->column, predicates[i].operator
                     , temp->relation, temp->column);
-        } else if (predicates[i].type == 1){
+        } else if (predicates[i].type == 1) {
             int *temp = (int*) predicates[i].second;
             printf("%d.%d %c %d ", predicates[i].first->relation, predicates[i].first->column, predicates[i].operator
                     , *temp);
