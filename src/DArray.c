@@ -46,7 +46,7 @@ void DArray_destroy(DArray *array) {
 int DArray_resize(DArray *array, int32_t newsize) {
 
 	array->capacity = newsize;
-	debug("Called resize with size = %d!", newsize);
+	//debug("Called resize with size = %d!", newsize);
 	check(array->capacity > 0, "The new size must be > 0");
 
 	void **contents = REALLOC(array->contents, array->capacity, void *);

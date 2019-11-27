@@ -16,7 +16,7 @@ int main() {
     // DArray *metadata_arr = DArray_create(sizeof(metadata), 10);
     DArray *query_list = parser();
     printf("test\n");
-    for (size_t i = 0; i < query_list->element_size; i++) {
+    for (size_t i = 0; i < DArray_count(query_list); i++) {
         query *tmp_data = (query*) DArray_get(query_list, i);
         print_relations(tmp_data->relations, tmp_data->relations_size);
         print_predicates(tmp_data->predicates, tmp_data->predicates_size);

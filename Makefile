@@ -45,7 +45,7 @@ build:
 # The Unit Tests
 .PHONY: tests
 main: $(TARGET)
-	$(CC) $(CFLAGS) -o sort_merge $(MAIN_SRC) $(TARGET) -lcunit 
+	$(CC) $(CFLAGS) -o queries $(MAIN_SRC) $(TARGET) -lcunit 
 
 
 valgrind:
@@ -53,7 +53,7 @@ valgrind:
 
 # The Cleaner
 clean:
-	rm -rf sort_merge
+	rm -rf queries
 	rm -rf build $(OBJECTS) $(TESTS)
 	rm -f tests/tests.log
 	find . -name "*.gc*" -exec rm {} \;
