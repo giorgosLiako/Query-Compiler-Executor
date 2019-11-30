@@ -144,15 +144,16 @@ int read_relations(DArray *metadata_arr) {
 
         DArray_push(metadata_arr, &m_data);
 
-        debug("printing arrays for debugging");
+        //debug("printing arrays for debugging");
 
         metadata *tmp_data = (metadata *) DArray_get(metadata_arr, 0);
-        for (size_t j = 0 ; j < tmp_data->columns ; j++) {
-            for (size_t i = 0 ; i < tmp_data->tuples ; i++) {
-                debug("%lu", tmp_data->data[j]->tuples[i].key);
-            }
-            debug("");
-        }
+        
+        // for (size_t j = 0 ; j < tmp_data->columns ; j++) {
+        //     for (size_t i = 0 ; i < tmp_data->tuples ; i++) {
+        //         debug("%lu", tmp_data->data[j]->tuples[i].key);
+        //     }
+        //     debug("");
+        // }
 
         munmap(mapped_file, sb.st_size);
         close(fd);
@@ -279,12 +280,13 @@ DArray* parser(){
         if (strchr(line_ptr, 'F')) break;
         char relations[128], predicates[128], select[128];
         sscanf(line_ptr, "%[0-9 ]%*[|]%[0-9.=<>&]%*[|]%[0-9. ]", relations, predicates, select);
-        
+
         query new_query;
         parse_relations(relations, &new_query);
         parse_predicates(predicates, &new_query);
         parse_select(select, &new_query);
         DArray_push(queries, &new_query);
+
     }
     if (characters == -1) {
         return NULL;
@@ -323,4 +325,23 @@ void print_select(relation_column* r_c, size_t size){
     }
     printf("\n");
     
+}
+
+void execute_filter(predicate* pred ,DArray *metadata_arr)
+{
+    
+}
+
+void execute_query(query* q , DArray* metadata_arr)
+{
+    printf("Execute Queries\n");
+    //first execute filter predicates 
+    for(size_t i = 0 ; i < q->predicates_size ; i++)
+    {
+        if( q->predicates[i].type == 1)
+        {
+            execute_filter(q->predicates[i] , q->relations )
+        }
+    }
+	return;
 }

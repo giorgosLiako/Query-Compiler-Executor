@@ -41,4 +41,9 @@ typedef struct query {
     int select_size;
 } query;
 
+typedef struct mid_results {
+    int relation;
+    uint64_t* payloads;
+} mid_results;
+
 #endif
