@@ -47,11 +47,11 @@ main: $(TARGET)
 
 # The Cleaner
 clean:
-	rm -rf sort_merge
+	rm -rf queries
 	rm -rf build $(OBJECTS) $(TESTS)
 	rm -f tests/tests.log
 	find . -name "*.gc*" -exec rm {} \;
 	rm -rf `find . -name "*.dSYM" -print`
 
 count:
-	wc src/*.c src/*.h main/*.c -l
+	wc -l src/*.c src/*.h main/*.c

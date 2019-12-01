@@ -138,5 +138,3 @@ int DArray_binary_search(DArray *array, DArray_compare cmp, void *key) {
 	}
 	return -1;
 }
-
-

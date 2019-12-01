@@ -13,22 +13,31 @@
 
 int main() {
 
-    // DArray *metadata_arr = DArray_create(sizeof(metadata), 10);
+    DArray *metadata_arr = DArray_create(sizeof(metadata), 10);
+
+    check(read_relations(metadata_arr) != -1, "Something went wrong in reading the relations");
+
     DArray *query_list = parser();
-    printf("test\n");
-    for (size_t i = 0; i < DArray_count(query_list) ; i++) {
+    for (size_t i = 0; i < DArray_count(query_list); i++) {
+
         query *tmp_data = (query*) DArray_get(query_list, i);
+
         print_relations(tmp_data->relations, tmp_data->relations_size);
         print_predicates(tmp_data->predicates, tmp_data->predicates_size);
         print_select(tmp_data->select, tmp_data->select_size);
     }
     
-    // check(read_relations(metadata_arr) != -1, "Something went wrong in reading the relations");
+    for (size_t i = 0; i < DArray_count(query_list); i++) {
 
-    // FREE(metadata_arr);
+        query *tmp_data = (query*) DArray_get(query_list, i);
+
+        execute_query(tmp_data , metadata_arr);
+    }
+
+    FREE(metadata_arr);
     return EXIT_SUCCESS;
 
-    error:
-        // FREE(metadata_arr);
-        return EXIT_FAILURE;
+     error:
+         FREE(metadata_arr);
+         return EXIT_FAILURE;
 }
