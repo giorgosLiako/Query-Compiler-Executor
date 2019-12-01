@@ -1,4 +1,4 @@
-#Kostas Chasialis Makefile (project 1)
+#Makefile (project)
 
 CFLAGS=-g3 -O2 -Wall -Wchkp -Wextra -D_FORTIFY_SOURCE=2 -DDEBUG $(OPTFLAGS)
 LDFLAGS=$(OPTLIBS)
@@ -13,10 +13,8 @@ TESTS=$(patsubst %.c,%,$(TEST_SRC))
 
 MAIN_SRC=$(wildcard main/*_main.c)
 
-TARGET=build/sort_merge.a
+TARGET=build/queries.a
 SO_TARGET=$(patsubst %.a,%.so,$(TARGET))
-
-
 
 UNAME_S := $(shell uname -s)
 
@@ -47,10 +45,6 @@ build:
 main: $(TARGET)
 	$(CC) $(CFLAGS) -o queries $(MAIN_SRC) $(TARGET) 
 
-
-valgrind:
-	VALGRIND="valgrind --log-file=/tmp/valgrind-%p.log" $(MAKE)
-
 # The Cleaner
 clean:
 	rm -rf sort_merge
@@ -58,19 +52,6 @@ clean:
 	rm -f tests/tests.log
 	find . -name "*.gc*" -exec rm {} \;
 	rm -rf `find . -name "*.dSYM" -print`
-
-# The Install
-install: all
-	install -d $(DESTDIR)/$(PREFIX)/lib/
-	install $(TARGET) $(DESTDIR)/$(PREFIX)/lib/
-
-# The Checker
-BADFUNCS='[^_.>a-zA-Z0-9](str(n?cpy|n?cat|xfrm|n?dup|str|pbrk|tok|_)\
-|stpn?cpy|a?sn?printf|byte_)'
-
-check:
-	@echo Files with potentially dangerous function
-	@egrep $(BADFUNCS) $(SOURCES) || true
 
 count:
 	wc src/*.c src/*.h main/*.c -l
