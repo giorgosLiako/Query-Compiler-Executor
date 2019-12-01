@@ -34,7 +34,10 @@ int main() {
         execute_query(tmp_data , metadata_arr);
     }
 
-    FREE(metadata_arr);
+
+    DArray_destroy(query_list);
+
+    DArray_destroy(metadata_arr);
     return EXIT_SUCCESS;
 
      error:
