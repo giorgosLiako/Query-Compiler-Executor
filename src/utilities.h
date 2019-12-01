@@ -35,6 +35,6 @@ void print_predicates(predicate*, size_t);
 
 void print_relations(int*, size_t);
 
-void exec_query(query* , DArray* );
+void execute_query(query* , DArray* );
 
 #endif

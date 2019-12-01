@@ -144,16 +144,16 @@ int read_relations(DArray *metadata_arr) {
 
         DArray_push(metadata_arr, &m_data);
 
-        //debug("printing arrays for debugging");
+        // debug("printing arrays for debugging");
 
-        metadata *tmp_data = (metadata *) DArray_get(metadata_arr, 0);
+        // metadata *tmp_data = (metadata *) DArray_get(metadata_arr, 0);
         
-        // for (size_t j = 0 ; j < tmp_data->columns ; j++) {
-        //     for (size_t i = 0 ; i < tmp_data->tuples ; i++) {
-        //         debug("%lu", tmp_data->data[j]->tuples[i].key);
-        //     }
-        //     debug("");
-        // }
+        //  for (size_t j = 0 ; j < tmp_data->columns ; j++) {
+        //      for (size_t i = 0 ; i < tmp_data->tuples ; i++) {
+        //          debug("%lu", tmp_data->data[j]->tuples[i].key);
+        //      }
+        //      debug("");
+        //  }
 
         munmap(mapped_file, sb.st_size);
         close(fd);
@@ -327,21 +327,124 @@ void print_select(relation_column* r_c, size_t size){
     
 }
 
-void execute_filter(predicate* pred ,DArray *metadata_arr)
+void execute_filter(predicate pred , int* relations ,DArray *metadata_arr , DArray* mid_results_arr)
 {
+    size_t tuples =0;    
+    mid_results tmp_results ;
+
+    int rel_exists = -1;
+    for(size_t i = 0 ; i <  DArray_count(mid_results_arr) ; i++)
+    {
+        mid_results *tmp = (mid_results*) DArray_get(mid_results_arr, i);
+
+        if ( tmp->relation == pred.first->relation)
+        {   rel_exists = i;
+            break;
+        }
+    }
+
+    metadata *tmp_data = (metadata*) DArray_get(metadata_arr, pred.first->relation);
+    relation* rel = tmp_data->data[pred.first->column];
+    uint64_t *number = (uint64_t*) pred.second; 
     
+    if (rel_exists >= 0 )
+    {   printf("REL EXISTS = %d\n",rel_exists);
+        mid_results *tmp = (mid_results*) DArray_get(mid_results_arr, rel_exists);
+        for(size_t i = 0 ; i <  DArray_count(tmp->payloads) ; i++)
+        {   
+            uint64_t* payload = (uint64_t*) DArray_get(tmp->payloads,i);
+
+            if ( pred.operator == '='){
+                if ( rel->tuples[*payload].key != *number ){
+                    DArray_remove(tmp->payloads,i);
+                }
+                else{                
+                    printf("%lu %lu\n", *payload , rel->tuples[*payload].key);
+                }
+            }
+            else if ( pred.operator == '>'){
+                if ( rel->tuples[*payload].key < *number ){
+                    DArray_remove(tmp->payloads,i);
+                }
+                else{
+                    printf("%lu %lu\n", *payload , rel->tuples[*payload].key);
+                }
+            }
+            else if ( pred.operator == '<'){
+                if ( rel->tuples[*payload].key > *number ){   
+                    DArray_remove(tmp->payloads,i);
+                }
+                else{
+                    printf("%lu %lu\n", *payload , rel->tuples[*payload].key);
+                }
+                
+            }
+            else{   
+                printf("Wrong operator \n");
+                return ;
+            }
+
+        }
+        return ;
+    }
+    else if (rel_exists < 0) 
+    {   
+        tmp_results.relation = relations[pred.first->relation];
+        tmp_results.payloads = DArray_create(sizeof(uint64_t*), 100);
+    }    
+
+    tuples = rel->num_tuples;
+
+    int counter=0;
+    for (size_t i = 0 ; i < tuples ; i++){
+        
+        if ( pred.operator == '='){
+            if ( rel->tuples[i].key == *number ){
+                counter++;
+                // printf("%d: %lu %lu\n",counter, rel->tuples[i].payload , rel->tuples[i].key);
+                DArray_push(tmp_results.payloads , &( rel->tuples[i].payload));
+            }
+        }
+        else if ( pred.operator == '>'){
+            if ( rel->tuples[i].key > *number ){
+                counter++;
+                // printf("%d: %lu %lu\n",counter, rel->tuples[i].payload , rel->tuples[i].key);
+                DArray_push(tmp_results.payloads ,  &(rel->tuples[i].payload));
+            }
+        }
+        else if ( pred.operator == '<'){
+            if ( rel->tuples[i].key < *number ){   
+                counter++;
+                // printf("%d: %lu %lu\n",counter, rel->tuples[i].payload , rel->tuples[i].key);
+                DArray_push(tmp_results.payloads , &( rel->tuples[i].payload));
+            }
+        }
+        else{   
+            printf("Wrong operator \n");
+            return ;
+        }
+    }        
+
+    DArray_push(mid_results_arr,&(tmp_results));
+    printf("END FILTER \n");
+
 }
 
 void execute_query(query* q , DArray* metadata_arr)
 {
     printf("Execute Queries\n");
     //first execute filter predicates 
-    for(size_t i = 0 ; i < q->predicates_size ; i++)
+
+    DArray *mid_results_arr = DArray_create(sizeof(mid_results*), 1);
+
+    for(size_t i = 0 ; i < (size_t)q->predicates_size ; i++)
     {
         if( q->predicates[i].type == 1)
         {
-            execute_filter(q->predicates[i] , q->relations )
+            execute_filter( q->predicates[i] , q->relations , metadata_arr , mid_results_arr);
         }
     }
-	return;
+
+    FREE(mid_results_arr);
+	
 }
