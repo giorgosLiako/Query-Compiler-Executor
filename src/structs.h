@@ -43,7 +43,7 @@ typedef struct query {
 
 typedef struct mid_results {
     int relation;
-    DArray* payloads;
+    DArray* tuples;
 } mid_results;
 
 #endif

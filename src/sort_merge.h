@@ -4,5 +4,6 @@
 #include "structs.h"
 
 void SortMergeJoin(relation *relR, relation *relS);
+int iterative_sort(relation *rel);
 
 #endif
