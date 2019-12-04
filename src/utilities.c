@@ -327,18 +327,16 @@ void print_select(relation_column* r_c, size_t size){
     
 }
 
-void execute_filter(predicate pred , int* relations ,DArray *metadata_arr , DArray *mid_results_arr)
+void execute_filter(predicate pred , int* relations , int relations_size ,DArray *metadata_arr , mid_results** mid_results_arr)
 {
     size_t tuples =0;    
-    mid_results tmp_results;
+    mid_results *tmp_results=NULL ;
 
+    //check if the relation exists in the middle results
     int rel_exists = -1;
-    for(size_t i = 0 ; i <  DArray_count(mid_results_arr) ; i++)
-    {
-        mid_results *tmp = (mid_results*) DArray_get(mid_results_arr, i);
-
-        if ( tmp->relation == pred.first->relation)
-        {   rel_exists = i;
+    for(size_t i = 0 ; i < (size_t)relations_size ; i++){
+        if ( ( mid_results_arr[i] != NULL ) && ( mid_results_arr[i]->relation == pred.first->relation) ) {
+            rel_exists = i;
             break;
         }
     }
@@ -346,87 +344,86 @@ void execute_filter(predicate pred , int* relations ,DArray *metadata_arr , DArr
     metadata *tmp_data = (metadata*) DArray_get(metadata_arr, pred.first->relation);
     relation* rel = tmp_data->data[pred.first->column];
     uint64_t *number = (uint64_t*) pred.second; 
-    
-    if (rel_exists >= 0 )
-    {   printf("REL EXISTS = %d\n",rel_exists);
-        mid_results *tmp = (mid_results*) DArray_get(mid_results_arr, rel_exists);
-        for(size_t i = 0 ; i <  DArray_count(tmp->payloads) ; i++)
-        {   
-            uint64_t* payload = (uint64_t*) DArray_get(tmp->payloads,i);
 
+    if (rel_exists >= 0 ) //if the relation exists in the middle results
+    {   //printf("REL EXISTS = %d\n",rel_exists);
+
+        //take the saved payloads and check if they satisfy the new filter
+        for(size_t i = 0 ; i <  DArray_count(mid_results_arr[rel_exists]->payloads) ; i++)
+        {   
+            uint64_t* payload = (uint64_t*) DArray_get(mid_results_arr[rel_exists]->payloads,i);
+            
+            //every payload that does not satisfy the new filter remove it from the dynamic array 
             if ( pred.operator == '='){
-                if ( rel->tuples[*payload].key != *number ) {
-                    DArray_remove(tmp->payloads,i);
-                }
-                else{                
-                    printf("%lu %lu\n", *payload , rel->tuples[*payload].key);
+                if ( rel->tuples[*payload].key != *number ){
+                    DArray_remove(mid_results_arr[rel_exists]->payloads,i);
+                    i--; //we removed an item so the i should not increase in this loop
                 }
             }
             else if ( pred.operator == '>'){
-                if ( rel->tuples[*payload].key < *number ) {
-                    DArray_remove(tmp->payloads,i);
-                }
-                else{
-                    printf("%lu %lu\n", *payload , rel->tuples[*payload].key);
+                if ( rel->tuples[*payload].key <= *number ){
+                    DArray_remove(mid_results_arr[rel_exists]->payloads,i);
+                    i--;
                 }
             }
-            else if ( pred.operator == '<'){
-                if ( rel->tuples[*payload].key > *number ) {   
-                    DArray_remove(tmp->payloads,i);
+             else if ( pred.operator == '<'){ 
+                if ( rel->tuples[*payload].key >= *number ){   
+                    DArray_remove(mid_results_arr[rel_exists]->payloads,i);
+                    i--;
                 }
-                else{
-                    printf("%lu %lu\n", *payload , rel->tuples[*payload].key);
-                }
-                
             }
             else{   
                 printf("Wrong operator \n");
                 return ;
             }
-
         }
-        return ;
     }
-    else if (rel_exists < 0) 
+    else if (rel_exists < 0) // if the relation does not exist in the middle results
     {   
-        tmp_results.relation = relations[pred.first->relation];
-        tmp_results.payloads = DArray_create(sizeof(uint64_t), 100);
-    }    
-
-    tuples = rel->num_tuples;
-
-    int counter=0;
-    for (size_t i = 0 ; i < tuples ; i++){
+        //set up and fill the struct of this relation in the middle results
+        tmp_results = MALLOC(mid_results,1);
+        tmp_results->relation = relations[pred.first->relation];
+        tmp_results->payloads = DArray_create(sizeof(uint64_t), 100);
         
-        if ( pred.operator == '=') {
-            if ( rel->tuples[i].key == *number ){
-                counter++;
-                // printf("%d: %lu %lu\n",counter, rel->tuples[i].payload , rel->tuples[i].key);
-                DArray_push(tmp_results.payloads , &( rel->tuples[i].payload));
+        //place this struct in the first available cell of the middle results
+        for(size_t i = 0 ; i < (size_t) relations_size ; i++){
+            if  ( mid_results_arr[i] == NULL ) {
+                mid_results_arr[i] = tmp_results;
+                break;
             }
         }
-        else if ( pred.operator == '>'){
-            if ( rel->tuples[i].key > *number ){
-                counter++;
-                // printf("%d: %lu %lu\n",counter, rel->tuples[i].payload , rel->tuples[i].key);
-                DArray_push(tmp_results.payloads ,  &(rel->tuples[i].payload));
-            }
-        }
-        else if ( pred.operator == '<'){
-            if ( rel->tuples[i].key < *number ){   
-                counter++;
-                // printf("%d: %lu %lu\n",counter, rel->tuples[i].payload , rel->tuples[i].key);
-                DArray_push(tmp_results.payloads , &( rel->tuples[i].payload));
-            }
-        }
-        else{   
-            printf("Wrong operator \n");
-            return ;
-        }
-    }        
 
-    DArray_push(mid_results_arr,&(tmp_results));
-    printf("END FILTER \n");
+        tuples = rel->num_tuples;
+        //check every tuple of the relation if it satisfies the filter 
+        for (size_t i = 0 ; i < tuples ; i++){
+            
+            //if the tuple satisfies the filter push it in the dynamic array of the payloads
+            if ( pred.operator == '='){
+                if ( rel->tuples[i].key == *number ){
+                    DArray_push(tmp_results->payloads , &(rel->tuples[i].payload));
+                }
+            }
+            else if ( pred.operator == '>'){
+                if ( rel->tuples[i].key > *number ){
+                    // printf("%lu %lu\n", rel->tuples[i].payload , rel->tuples[i].key);
+                    // if (rel->tuples[i].key < 6000)
+                    //     counter++;
+                    DArray_push(tmp_results->payloads ,  &(rel->tuples[i].payload));
+                }
+            }
+            else if ( pred.operator == '<'){
+                if ( rel->tuples[i].key < *number ){   
+                    DArray_push(tmp_results->payloads , &( rel->tuples[i].payload));
+                }
+            }
+            else{   
+                printf("Wrong operator \n");
+                return ;
+            }
+        }        
+    
+    }
+    printf("END FILTER %d \n",counter);
 
 }
 
@@ -435,16 +432,24 @@ void execute_query(query* q , DArray* metadata_arr)
     printf("Execute Queries\n");
     //first execute filter predicates 
 
-    DArray *mid_results_arr = DArray_create(sizeof(mid_results*), 1);
+    mid_results** mid_results_arr = MALLOC(mid_results*,q->relations_size);
+    for(size_t i = 0 ; i < (size_t) q->relations_size ; i++ ) //initialize middle results array
+        mid_results_arr[i] = NULL;
 
-    for(size_t i = 0 ; i < (size_t)q->predicates_size ; i++)
-    {
-        if( q->predicates[i].type == 1)
-        {
-            execute_filter( q->predicates[i] , q->relations , metadata_arr , mid_results_arr);
+
+    for(size_t i = 0 ; i < (size_t)q->predicates_size ; i++){
+        
+        if( q->predicates[i].type == 1){ //filter predicate
+            execute_filter( q->predicates[i] , q->relations , q->relations_size , metadata_arr , mid_results_arr);
         }
     }
 
-    FREE(mid_results_arr);
-	
+    for(size_t i = 0 ; i < (size_t) q->relations_size ; i++ ){
+        if (mid_results_arr[i] != NULL){
+            DArray_destroy( mid_results_arr[i]->payloads);
+            FREE(mid_results_arr[i]);
+        }
+    }
+
+    FREE(mid_results_arr);	
 }
