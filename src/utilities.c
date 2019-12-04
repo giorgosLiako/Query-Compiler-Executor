@@ -327,10 +327,10 @@ void print_select(relation_column* r_c, size_t size){
     
 }
 
-void execute_filter(predicate pred , int* relations ,DArray *metadata_arr , DArray* mid_results_arr)
+void execute_filter(predicate pred , int* relations ,DArray *metadata_arr , DArray *mid_results_arr)
 {
     size_t tuples =0;    
-    mid_results tmp_results ;
+    mid_results tmp_results;
 
     int rel_exists = -1;
     for(size_t i = 0 ; i <  DArray_count(mid_results_arr) ; i++)
@@ -355,7 +355,7 @@ void execute_filter(predicate pred , int* relations ,DArray *metadata_arr , DArr
             uint64_t* payload = (uint64_t*) DArray_get(tmp->payloads,i);
 
             if ( pred.operator == '='){
-                if ( rel->tuples[*payload].key != *number ){
+                if ( rel->tuples[*payload].key != *number ) {
                     DArray_remove(tmp->payloads,i);
                 }
                 else{                
@@ -363,7 +363,7 @@ void execute_filter(predicate pred , int* relations ,DArray *metadata_arr , DArr
                 }
             }
             else if ( pred.operator == '>'){
-                if ( rel->tuples[*payload].key < *number ){
+                if ( rel->tuples[*payload].key < *number ) {
                     DArray_remove(tmp->payloads,i);
                 }
                 else{
@@ -371,7 +371,7 @@ void execute_filter(predicate pred , int* relations ,DArray *metadata_arr , DArr
                 }
             }
             else if ( pred.operator == '<'){
-                if ( rel->tuples[*payload].key > *number ){   
+                if ( rel->tuples[*payload].key > *number ) {   
                     DArray_remove(tmp->payloads,i);
                 }
                 else{
@@ -390,7 +390,7 @@ void execute_filter(predicate pred , int* relations ,DArray *metadata_arr , DArr
     else if (rel_exists < 0) 
     {   
         tmp_results.relation = relations[pred.first->relation];
-        tmp_results.payloads = DArray_create(sizeof(uint64_t*), 100);
+        tmp_results.payloads = DArray_create(sizeof(uint64_t), 100);
     }    
 
     tuples = rel->num_tuples;
@@ -398,7 +398,7 @@ void execute_filter(predicate pred , int* relations ,DArray *metadata_arr , DArr
     int counter=0;
     for (size_t i = 0 ; i < tuples ; i++){
         
-        if ( pred.operator == '='){
+        if ( pred.operator == '=') {
             if ( rel->tuples[i].key == *number ){
                 counter++;
                 // printf("%d: %lu %lu\n",counter, rel->tuples[i].payload , rel->tuples[i].key);
