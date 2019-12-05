@@ -43,6 +43,7 @@ typedef struct query {
 
 typedef struct mid_results {
     int relation;
+    int sorted;
     DArray* tuples;
 } mid_results;
 
