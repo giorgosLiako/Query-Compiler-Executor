@@ -286,23 +286,27 @@ DArray* parser() {
     return queries;
 }
 
-void check_relation_exists(int relation , mid_result* mid_results_arr ,int* relations, 
-                                    int relations_size , int * exists) {
+mid_result* check_relation_exists(int relation , DArray *mid_result_list ,int* relations, 
+                                    int relations_size , int *exists) {
     //check if the relation exists in the middle results
-
-    for(size_t i = 0 ; i < (size_t)relations_size ; i++){
-        printf("%d %d\n", relations[i], relation);
-        if (relations[i] == relation) {
-            if (mid_results_arr[i].relation == -1) {
-                mid_results_arr[i].relation = relation;
-                mid_results_arr[i].payloads = DArray_create(sizeof(int64_t), 100);
-            } 
-            else {
-                *exists = i;
+    for (size_t i = 0 ; i < DArray_count(mid_result_list) ; i++) {
+        mid_result *mid_results_arr = *(mid_result **) DArray_get(mid_result_list, i);
+        
+        for(size_t j = 0 ; j < (size_t)relations_size ; j++) {
+            printf("%d %d\n", relations[i], relation);
+            if (relations[i] == relation) {
+                if (mid_results_arr[j].relation == -1) {
+                    mid_results_arr[j].relation = relation;
+                    mid_results_arr[j].payloads = DArray_create(sizeof(int64_t), 100);
+                } 
+                else {
+                    *exists = i;
+                }
+                return mid_results_arr;
             }
-            return;
         }
     }
+    return NULL;
 }
 
 void exec_filter_rel_exists(predicate pred , relation* rel , uint64_t number , mid_result* tmp_results) {  
@@ -344,16 +348,19 @@ void exec_filter_rel_no_exists(predicate pred,relation* rel , uint64_t number ,m
         //if the tuple satisfies the filter push it in the dynamic array of the payloads
         if ( pred.operator == '='){
             if (rel->tuples[i].key == number) {
+                debug("in here");
                 DArray_push(tmp_results->payloads, &(rel->tuples[i].payload));
             }
         }
         else if (pred.operator == '>') {
             if (rel->tuples[i].key > number) {
+                debug("in here");
                 DArray_push(tmp_results->payloads,  &(rel->tuples[i].payload));
             }
         }
         else if (pred.operator == '<') {
             if (rel->tuples[i].key < number ) {   
+                debug("in here");
                 DArray_push(tmp_results->payloads, &( rel->tuples[i].payload));
             }
         }
@@ -365,11 +372,11 @@ void exec_filter_rel_no_exists(predicate pred,relation* rel , uint64_t number ,m
     printf("%d\n",DArray_count(tmp_results->payloads));
 }
 
-void execute_filter(predicate pred , int* relations , int relations_size ,DArray *metadata_arr , mid_result* mid_results_arr) {
+void execute_filter(predicate pred , int* relations , int relations_size ,DArray *metadata_arr , DArray *mid_results_list) {
 
-    int relation_exists= -1; 
+    int relation_exists = -1; 
     
-    check_relation_exists(relations[pred.first->relation], mid_results_arr, relations , relations_size, &relation_exists);
+    mid_result *mid_results_arr = check_relation_exists(relations[pred.first->relation], mid_results_list, relations , relations_size, &relation_exists);
     
     metadata *tmp_data = (metadata*) DArray_get(metadata_arr, relations[pred.first->relation]);
     relation* rel = tmp_data->data[pred.first->column];
@@ -377,10 +384,10 @@ void execute_filter(predicate pred , int* relations , int relations_size ,DArray
     uint64_t *number = (uint64_t*) pred.second; 
 
     if (relation_exists >= 0 )  {   
-        exec_filter_rel_exists(pred ,rel, *number , mid_results_arr);
+        exec_filter_rel_exists(pred ,rel, *number , &mid_results_arr[pred.first->relation]);
     }
-    else if (relation_exists < 0) {   
-        exec_filter_rel_no_exists(pred, rel, *number ,  mid_results_arr);
+    else if (relation_exists < 0) {  
+        exec_filter_rel_no_exists(pred, rel, *number ,  &mid_results_arr[pred.first->relation]);
     }
 
 }
@@ -389,8 +396,7 @@ mid_result *new_mid_results(size_t relations_size) {
     mid_result *mid_results_arr = MALLOC(mid_result, relations_size);
 
     for(size_t i = 0 ; i < relations_size ; i++ ) { 
-        mid_results_arr[i].relation = -1;
-        
+        mid_results_arr[i].relation = -1;   
     }
 
     return mid_results_arr;
