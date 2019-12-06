@@ -3,7 +3,10 @@
 
 #include "structs.h"
 
-void SortMergeJoin(relation *relR, relation *relS);
+void join_relations(relation *relR, relation *relS);
+
+void self_join(relation *relR, relation *relS);
+
 int iterative_sort(relation *rel);
 
 #endif
