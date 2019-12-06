@@ -62,6 +62,10 @@ void join_relations(relation *relR, relation *relS) {
         return;
 }
 
+void self_join(relation *relR, relation *relS) {
+    
+}
+
 //functions that sorts iterative one relation
 int iterative_sort(relation *rel) {
     if ( rel->num_tuples * sizeof(tuple) + sizeof(uint64_t) < 64*1024) {

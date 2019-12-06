@@ -1,4 +1,4 @@
-#Kostas Chasialis Makefile (project 1)
+#Makefile (project)
 
 CFLAGS=-g3 -O2 -Wall -Wchkp -Wextra -D_FORTIFY_SOURCE=2 -DDEBUG $(OPTFLAGS)
 LDFLAGS=$(OPTLIBS)
@@ -15,8 +15,6 @@ MAIN_SRC=$(wildcard main/*_main.c)
 
 TARGET=build/queries.a
 SO_TARGET=$(patsubst %.a,%.so,$(TARGET))
-
-
 
 UNAME_S := $(shell uname -s)
 
@@ -47,8 +45,6 @@ build:
 main: $(TARGET)
 	$(CC) $(CFLAGS) -o queries $(MAIN_SRC) $(TARGET) 
 
-
-
 # The Cleaner
 clean:
 	rm -rf queries
@@ -56,7 +52,6 @@ clean:
 	rm -f tests/tests.log
 	find . -name "*.gc*" -exec rm {} \;
 	rm -rf `find . -name "*.dSYM" -print`
-
 
 count:
 	wc -l src/*.c src/*.h main/*.c
