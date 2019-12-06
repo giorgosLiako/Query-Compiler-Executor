@@ -41,9 +41,9 @@ typedef struct query {
     int select_size;
 } query;
 
-typedef struct mid_results {
+typedef struct mid_result {
     int relation;
     DArray* payloads;
-} mid_results;
+} mid_result;
 
 #endif
