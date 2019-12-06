@@ -329,27 +329,24 @@ void print_select(relation_column* r_c, size_t size){
 }
 
 
-mid_results* check_relation_exists(int relation , mid_results** mid_results_arr ,int* relations, 
+void check_relation_exists(int relation , mid_results* mid_results_arr ,int* relations, 
                                     int relations_size , int * exists)
 {
     //check if the relation exists in the middle results
 
     for(size_t i = 0 ; i < (size_t)relations_size ; i++){
         if ( relations[i] == relation){
-            if (mid_results_arr[i] == NULL) {
-                mid_results *tmp_results = MALLOC(mid_results,1);
-                tmp_results->relation = relation;
-                tmp_results->tuples = DArray_create(sizeof(tuple), 100);
-                mid_results_arr[i] = tmp_results;
+            printf("--%d\n", mid_results_arr[i].relation);
+            if (mid_results_arr[i].relation == -1) {
+                mid_results_arr[i].relation = relation;
+                mid_results_arr[i].payloads = DArray_create(sizeof(int64_t), 100);
+                printf("tmp results %p\n", &mid_results_arr[i]);
                 printf("hi\n");
             } else {
                 *exists = i;
             }
-            return mid_results_arr[i];
         }
     }
-    //something went terribly wrong
-    return NULL;
 }
 
 void exec_filter_rel_exists(predicate pred , relation* rel , uint64_t number , mid_results* tmp_results)
@@ -388,7 +385,7 @@ void exec_filter_rel_exists(predicate pred , relation* rel , uint64_t number , m
 void exec_filter_rel_no_exists(predicate pred,relation* rel ,uint64_t tuples , uint64_t number ,mid_results* tmp_results)
 {
     //check every tuple of the relation if it satisfies the filter 
-    for (size_t i = 0 ; i < rel->num_tuples; i++){
+    for (size_t i = 0 ; i < tuples; i++){
             
         //if the tuple satisfies the filter push it in the dynamic array of the payloads
         if ( pred.operator == '='){
@@ -414,58 +411,61 @@ void exec_filter_rel_no_exists(predicate pred,relation* rel ,uint64_t tuples , u
     printf("%d\n",DArray_count(tmp_results->payloads));
 }
 
-void execute_filter(predicate pred , int* relations , int relations_size ,DArray *metadata_arr , mid_results** mid_results_arr)
+void execute_filter(predicate pred , int* relations , int relations_size ,DArray *metadata_arr , mid_results* mid_results_arr)
 {   
     int relation_exists=-1 ; 
-    mid_results* tmp_results = check_relation_exists(relations[pred.first->relation],mid_results_arr,relations ,relations_size , &relation_exists);
+    check_relation_exists(relations[pred.first->relation],mid_results_arr,relations ,relations_size , &relation_exists);
     metadata *tmp_data = (metadata*) DArray_get(metadata_arr, relations[pred.first->relation]);
     relation* rel = tmp_data->data[pred.first->column];
     uint64_t *number = (uint64_t*) pred.second; 
 
     if (relation_exists >= 0 ) 
     {   
-        exec_filter_rel_exists(pred ,rel, *number , tmp_results);
+        exec_filter_rel_exists(pred ,rel, *number , mid_results_arr);
     }
     else if (relation_exists < 0) 
     {   
-        exec_filter_rel_no_exists(pred, rel , tmp_data->tuples  , *number ,  tmp_results);
+        exec_filter_rel_no_exists(pred, rel , tmp_data->tuples  , *number ,  mid_results_arr);
     }
 
     printf("END FILTER %d\n",relation_exists);
 
 }
 
-mid_results **new_mid_results(int relations_size) {
-    mid_results** mid_results_arr = MALLOC(mid_results*, relations_size);
+mid_results *new_mid_results(size_t relations_size) {
+    mid_results *mid_results_arr = MALLOC(mid_results, relations_size);
 
-    for(size_t i = 0 ; i < (size_t)relations_size ; i++ ) 
-        mid_results_arr[i] = NULL;
+    for(size_t i = 0 ; i < relations_size ; i++ ) 
+        mid_results_arr[i].relation = -1;
 
     return mid_results_arr;
 }
 
-mid_results **get_mid_results(DArray *list, int relation_r, int relation_l, size_t relations_size){
+mid_results *get_mid_results(DArray *list, int relation_r, int relation_l, size_t relations_size){
     if (DArray_count(list) == 0){
         printf("empty\n");
-        mid_results **new = new_mid_results(relations_size);
-        DArray_push(list, new);
+        mid_results *new = new_mid_results(relations_size);
+        printf("%p %p\n", new, &new);
+        DArray_push(list, &new);
         return new;
     } else {
         for (size_t i = 0; i < DArray_count(list); i++){
             mid_results **temp = (mid_results**) DArray_get(list, i);
+            printf("temp %p\n", *temp);
             int count = 0;
+            printf("%d\n", relations_size);
             for (size_t j = 0; j < relations_size; j++){
-                if ((temp[j] != NULL) && (temp[j]->relation == relation_l)) count++;
-                if ((temp[j] != NULL) && (temp[j]->relation == relation_r)) count++;
+                if (temp[j]->relation == relation_l) count++;
+                if ((relation_r != -1) && (temp[j]->relation == relation_r)) count++;
             }
             if (count > 0){
                 printf("exists\n");
-                return temp;
+                return *temp;
             }
         }
         printf("doesnt exist\n");
-        mid_results **new = new_mid_results(relations_size);
-        DArray_push(list, new);
+        mid_results *new = new_mid_results(relations_size);
+        DArray_push(list, &new);
         return new;
     }
 }
@@ -481,9 +481,12 @@ void execute_query(query* q , DArray* metadata_arr)
 
 
     for(size_t i = 0 ; i < (size_t)q->predicates_size ; i++){
-        mid_results **temp = get_mid_results(mid_results_list, q->predicates[i].first->relation, -1, q->relations_size);
+        mid_results *temp = get_mid_results(mid_results_list, q->predicates[i].first->relation, -1, q->relations_size);
+        printf("pointer %p\n", temp);
         if( q->predicates[i].type == 1){ //filter predicate
+            printf("->%d\n", temp[0].relation);
             execute_filter( q->predicates[i] , q->relations , q->relations_size , metadata_arr , temp);
+            printf("->%d\n", temp[0].relation);
         }
     }
 
