@@ -276,7 +276,7 @@ DArray* parser() {
         query new_query;
         parse_relations(relations, &new_query);
         parse_predicates(predicates, &new_query);
-        parse_select(select, &new_query);
+        parse_select(select,  &new_query);
         DArray_push(queries, &new_query);
 
     }
@@ -342,17 +342,17 @@ void exec_filter_rel_no_exists(predicate pred,relation* rel , uint64_t number ,m
         //if the tuple satisfies the filter push it in the dynamic array of the payloads
         if ( pred.operator == '='){
             if (rel->tuples[i].key == number) {
-                DArray_push(tmp_results->payloads , &(rel->tuples[i].payload));
+                DArray_push(tmp_results->payloads, &(rel->tuples[i].payload));
             }
         }
         else if (pred.operator == '>') {
             if (rel->tuples[i].key > number) {
-                DArray_push(tmp_results->payloads ,  &(rel->tuples[i].payload));
+                DArray_push(tmp_results->payloads,  &(rel->tuples[i].payload));
             }
         }
         else if (pred.operator == '<') {
             if (rel->tuples[i].key < number ) {   
-                DArray_push(tmp_results->payloads , &( rel->tuples[i].payload));
+                DArray_push(tmp_results->payloads, &( rel->tuples[i].payload));
             }
         }
         else{   
@@ -367,7 +367,7 @@ void execute_filter(predicate pred , int* relations , int relations_size ,DArray
 
     int relation_exists= -1; 
     
-    check_relation_exists(relations[pred.first->relation],mid_results_arr,relations ,relations_size , &relation_exists);
+    check_relation_exists(relations[pred.first->relation], mid_results_arr, relations , relations_size, &relation_exists);
     
     metadata *tmp_data = (metadata*) DArray_get(metadata_arr, relations[pred.first->relation]);
     relation* rel = tmp_data->data[pred.first->column];
@@ -380,8 +380,6 @@ void execute_filter(predicate pred , int* relations , int relations_size ,DArray
     else if (relation_exists < 0) {   
         exec_filter_rel_no_exists(pred, rel, *number ,  mid_results_arr);
     }
-
-    printf("END FILTER %d\n",relation_exists);
 
 }
 
@@ -398,7 +396,6 @@ mid_result *new_mid_results(size_t relations_size) {
 mid_result *get_mid_results(DArray *list, int relation_r, int relation_l, size_t relations_size){
     
     if (DArray_count(list) == 0) {
-        printf("empty\n");
         mid_result *new = new_mid_results(relations_size);
         DArray_push(list, &new);
         return new;
@@ -406,26 +403,24 @@ mid_result *get_mid_results(DArray *list, int relation_r, int relation_l, size_t
     else {
         for (size_t i = 0; i < DArray_count(list); i++) {
 
-            mid_result *temp = *(mid_result**) DArray_get(list, i);
+            mid_result *temp = *(mid_result **) DArray_get(list, i);
             int count = 0;
             
             for (size_t j = 0; j < relations_size; j++){
-                if (temp == relation_l) {
+                if (temp[j].relation == relation_l) {
                     count++;
                 }
                 
-                if ((relation_r != -1) && (temp[j]->relation == relation_r)) {
+                if ((relation_r != -1) && (temp[j].relation == relation_r)) {
                     count++;
                 }
             }
 
             if (count > 0) {
-                printf("exists\n");
-                return *temp;
+                return temp;
             }
         }
 
-        printf("doesnt exist\n");
         mid_result *new = new_mid_results(relations_size);
         DArray_push(list, &new);
         return new;
@@ -433,19 +428,16 @@ mid_result *get_mid_results(DArray *list, int relation_r, int relation_l, size_t
 }
 
 
-void execute_query(query* q , DArray* metadata_arr)
-{
-    printf("Execute Queries\n");
+void execute_query(query* q , DArray* metadata_arr) {
     //first execute filter predicates 
 
-    DArray *mid_results_list = DArray_create(q->relations_size * sizeof(mid_result), 10);
+    DArray *mid_results_list = DArray_create(sizeof(mid_result *), 2);
     
-
-    for(size_t i = 0 ; i < (size_t)q->predicates_size ; i++) {
-
-    for(size_t i = 0 ; i < (size_t)q->predicates_size ; i++) {
+    for (size_t i = 0 ; i < (size_t)q->predicates_size ; i++) {
+       
         mid_result *temp = get_mid_results(mid_results_list, q->predicates[i].first->relation, -1, q->relations_size);
-        if( q->predicates[i].type == 1){ //filter predicate
+       
+        if( q->predicates[i].type == 1) { //filter predicate
             execute_filter( q->predicates[i] , q->relations , q->relations_size , metadata_arr , temp);
         }
     }	
