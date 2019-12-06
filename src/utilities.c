@@ -339,7 +339,7 @@ mid_results* check_relation_exists(int relation , mid_results** mid_results_arr 
             if (mid_results_arr[i] == NULL) {
                 mid_results *tmp_results = MALLOC(mid_results,1);
                 tmp_results->relation = relation;
-                tmp_results->tuples = DArray_create(sizeof(tuple), 100);
+                tmp_results->payloads = DArray_create(sizeof(uint64_t), 100);
                 mid_results_arr[i] = tmp_results;
                 printf("hi\n");
             } else {
@@ -388,7 +388,7 @@ void exec_filter_rel_exists(predicate pred , relation* rel , uint64_t number , m
 void exec_filter_rel_no_exists(predicate pred,relation* rel ,uint64_t tuples , uint64_t number ,mid_results* tmp_results)
 {
     //check every tuple of the relation if it satisfies the filter 
-    for (size_t i = 0 ; i < rel->num_tuples; i++){
+    for (size_t i = 0 ; i < tuples ; i++){
             
         //if the tuple satisfies the filter push it in the dynamic array of the payloads
         if ( pred.operator == '='){
@@ -454,9 +454,12 @@ mid_results **get_mid_results(DArray *list, int relation_r, int relation_l, size
         for (size_t i = 0; i < DArray_count(list); i++){
             mid_results **temp = (mid_results**) DArray_get(list, i);
             int count = 0;
+            
             for (size_t j = 0; j < relations_size; j++){
+        
                 if ((temp[j] != NULL) && (temp[j]->relation == relation_l)) count++;
                 if ((temp[j] != NULL) && (temp[j]->relation == relation_r)) count++;
+
             }
             if (count > 0){
                 printf("exists\n");
