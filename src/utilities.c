@@ -377,10 +377,10 @@ void execute_filter(predicate pred , int* relations , int relations_size ,DArray
     uint64_t *number = (uint64_t*) pred.second; 
 
     if (relation_exists >= 0 )  {   
-        exec_filter_rel_exists(pred ,rel, *number , mid_results_arr);
+        exec_filter_rel_exists(pred ,rel, *number , &mid_results_arr[pred.first->relation]);
     }
     else if (relation_exists < 0) {   
-        exec_filter_rel_no_exists(pred, rel, *number ,  mid_results_arr);
+        exec_filter_rel_no_exists(pred, rel, *number ,  &mid_results_arr[pred.first->relation]);
     }
 
 }
