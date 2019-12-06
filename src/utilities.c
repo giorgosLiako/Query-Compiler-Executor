@@ -291,6 +291,7 @@ void check_relation_exists(int relation , mid_result* mid_results_arr ,int* rela
     //check if the relation exists in the middle results
 
     for(size_t i = 0 ; i < (size_t)relations_size ; i++){
+        printf("%d %d\n", relations[i], relation);
         if (relations[i] == relation) {
             if (mid_results_arr[i].relation == -1) {
                 mid_results_arr[i].relation = relation;
@@ -299,6 +300,7 @@ void check_relation_exists(int relation , mid_result* mid_results_arr ,int* rela
             else {
                 *exists = i;
             }
+            return;
         }
     }
 }
@@ -388,14 +390,16 @@ mid_result *new_mid_results(size_t relations_size) {
 
     for(size_t i = 0 ; i < relations_size ; i++ ) { 
         mid_results_arr[i].relation = -1;
+        
     }
 
     return mid_results_arr;
 }
 
-mid_result *get_mid_results(DArray *list, int relation_r, int relation_l, size_t relations_size){
+mid_result *get_mid_results(DArray *list, int relation_l, int relation_r, size_t relations_size){
     
     if (DArray_count(list) == 0) {
+        printf("new entity\n");
         mid_result *new = new_mid_results(relations_size);
         DArray_push(list, &new);
         return new;
@@ -407,6 +411,7 @@ mid_result *get_mid_results(DArray *list, int relation_r, int relation_l, size_t
             int count = 0;
             
             for (size_t j = 0; j < relations_size; j++){
+                printf("%d %d\n", temp[j].relation, relation_l);
                 if (temp[j].relation == relation_l) {
                     count++;
                 }
@@ -417,9 +422,11 @@ mid_result *get_mid_results(DArray *list, int relation_r, int relation_l, size_t
             }
 
             if (count > 0) {
+                printf("found old entity\n");
                 return temp;
             }
         }
+        printf("new entity round2\n");
 
         mid_result *new = new_mid_results(relations_size);
         DArray_push(list, &new);
