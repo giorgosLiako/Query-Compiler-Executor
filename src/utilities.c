@@ -123,6 +123,7 @@ int read_relations(DArray *metadata_arr) {
     char *linptr = NULL;
     size_t n = 0;
 
+    printf("%s\n", "Insert relations");
     while (getline(&linptr, &n, stdin) != -1) {
         if (!strncmp(linptr, "Done\n", strlen("Done\n")) || !strncmp(linptr,"done\n", strlen("done\n"))) {
             break;
@@ -266,6 +267,8 @@ DArray* parser() {
     char* line_ptr = NULL;
     size_t n = 0;
     int characters;
+    
+    printf("%s\n", "Insert workloads");
     while ((characters = getline(&line_ptr, &n, stdin)) != -1) {
         
         if (strchr(line_ptr, 'F')) break;
@@ -286,27 +289,23 @@ DArray* parser() {
     return queries;
 }
 
-mid_result* check_relation_exists(int relation , DArray *mid_result_list ,int* relations, 
-                                    int relations_size , int *exists) {
+void check_relation_exists(int relation , mid_result* mid_results_arr ,int* relations, 
+                                    int relations_size , int * exists) {
     //check if the relation exists in the middle results
-    for (size_t i = 0 ; i < DArray_count(mid_result_list) ; i++) {
-        mid_result *mid_results_arr = *(mid_result **) DArray_get(mid_result_list, i);
-        
-        for(size_t j = 0 ; j < (size_t)relations_size ; j++) {
-            printf("%d %d\n", relations[j], relation);
-            if (relations[j] == relation) {
-                if (mid_results_arr[j].relation == -1) {
-                    mid_results_arr[j].relation = relation;
-                    mid_results_arr[j].payloads = DArray_create(sizeof(int64_t), 100);
-                } 
-                else {
-                    *exists = i;
-                }
-                return mid_results_arr;
+
+    for(size_t i = 0 ; i < (size_t)relations_size ; i++){
+        printf("%d %d\n", relations[i], relation);
+        if (relations[i] == relation) {
+            if (mid_results_arr[i].relation == -1) {
+                mid_results_arr[i].relation = relation;
+                mid_results_arr[i].payloads = DArray_create(sizeof(int64_t), 100);
+            } 
+            else {
+                *exists = i;
             }
+            return;
         }
     }
-    return NULL;
 }
 
 void exec_filter_rel_exists(predicate pred , relation* rel , uint64_t number , mid_result* tmp_results) {  
@@ -372,11 +371,11 @@ void exec_filter_rel_no_exists(predicate pred,relation* rel , uint64_t number ,m
     printf("%d\n",DArray_count(tmp_results->payloads));
 }
 
-void execute_filter(predicate pred , int* relations , int relations_size ,DArray *metadata_arr , DArray *mid_results_list) {
+void execute_filter(predicate pred , int* relations , int relations_size ,DArray *metadata_arr , mid_result* mid_results_arr) {
 
-    int relation_exists = -1; 
+    int relation_exists= -1; 
     
-    mid_result *mid_results_arr = check_relation_exists(relations[pred.first->relation], mid_results_list, relations , relations_size, &relation_exists);
+    check_relation_exists(relations[pred.first->relation], mid_results_arr, relations , relations_size, &relation_exists);
     
     metadata *tmp_data = (metadata*) DArray_get(metadata_arr, relations[pred.first->relation]);
     relation* rel = tmp_data->data[pred.first->column];
@@ -384,10 +383,10 @@ void execute_filter(predicate pred , int* relations , int relations_size ,DArray
     uint64_t *number = (uint64_t*) pred.second; 
 
     if (relation_exists >= 0 )  {   
-        exec_filter_rel_exists(pred ,rel, *number, &mid_results_arr[pred.first->relation]);
+        exec_filter_rel_exists(pred ,rel, *number , &mid_results_arr[pred.first->relation]);
     }
-    else if (relation_exists < 0) {   
-        exec_filter_rel_no_exists(pred, rel, *number, &mid_results_arr[pred.first->relation]);
+    else if (relation_exists < 0) {  
+        exec_filter_rel_no_exists(pred, rel, *number ,  &mid_results_arr[pred.first->relation]);
     }
 
 }
@@ -440,8 +439,23 @@ mid_result *get_mid_results(DArray *list, int relation_l, int relation_r, size_t
     }
 }
 
+static void print_predicates(query *qry) {
 
-void execute_query(query* q , DArray* metadata_arr) {
+    for (ssize_t i = 0 ; i < qry->predicates_size ; i++) {
+        predicate current = qry->predicates[i];
+        
+        if (current.type == 1) {
+            int second = *(int *) current.second;
+            printf("%d.%d %c %d |", current.first->relation, current.first->column, current.operator, second);
+        }
+        else {
+            relation_column *rel_col = (relation_column *) current.second;
+            printf("%d.%d %c %d.%d | ", current.first->relation, current.first->column, current.operator, rel_col->relation, rel_col->column);
+        }
+    }
+}
+
+static void execute_query(query* q , DArray* metadata_arr) {
     //first execute filter predicates 
 
     DArray *mid_results_list = DArray_create(sizeof(mid_result *), 2);
@@ -454,4 +468,92 @@ void execute_query(query* q , DArray* metadata_arr) {
             execute_filter( q->predicates[i] , q->relations , q->relations_size , metadata_arr , temp);
         }
     }	
+}
+
+static inline void swap_predicates(query *qry, ssize_t i, ssize_t j) {
+
+    if (i == j) {
+        return;
+    }
+
+    predicate temp = qry->predicates[i];
+    qry->predicates[i] = qry->predicates[j];
+    qry->predicates[j] = temp;
+}
+
+static bool is_match(predicate *lhs, predicate *rhs, bool is_filter) {
+   
+    if (is_filter) {
+        relation_column *second = (relation_column *) rhs->second;
+        return ( (lhs->first->column == rhs->first->column && lhs->first->relation == rhs->first->relation) || (lhs->first->column == second->column && lhs->first->relation == second->column) );
+    } else {
+        relation_column *lhs_second = (relation_column *) lhs->second;
+        relation_column *rhs_second = (relation_column *) rhs->second;
+        if (lhs->first->column == rhs->first->column && lhs->first->relation == rhs->first->relation) {
+            return true;
+        }
+        else if (lhs->first->column == rhs_second->column && lhs->first->relation == rhs_second->relation) {
+            return true;
+        }
+        else if (lhs_second->column == rhs->first->column && lhs_second->relation == rhs->first->relation) {
+            return true;
+        }
+        else if (lhs_second->column == rhs_second->column && lhs_second->relation == rhs_second->relation) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static void arrange_predicates(query *qry) {
+
+    ssize_t predicates_num = qry->predicates_size;
+
+    bool *is_arranged = CALLOC(predicates_num, sizeof(bool), bool);
+
+    ssize_t index = 0;
+    for (ssize_t i = 0 ; i < predicates_num ; i++) {
+        predicate current = qry->predicates[i];
+        if (current.type == 1) {    //if its a filter
+            is_arranged[index] = true;
+            swap_predicates(qry, i, index++);
+        }
+    }
+
+    for (ssize_t i = 0 ; i < predicates_num - 1; i++) {
+        predicate current = qry->predicates[i];
+        for (ssize_t j = i + 1 ; j < predicates_num ; j++) {
+            predicate temp = qry->predicates[j];
+            if (current.type == 1 && temp.type == 0) {
+                if (is_match(&current, &temp, 1)) {
+                    is_arranged[index] = true;
+                    swap_predicates(qry, j, index);
+                    swap_predicates(qry, i, index - 1);
+                    index++;
+                }
+            }  
+            else if (current.type == 0 && temp.type == 0) {
+                if (is_match(&current, &temp, 0) && !is_arranged[j]) {
+                    if (index + 1 != j) {
+                        is_arranged[index] = true; 
+                        swap_predicates(qry, index++, j);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void execute_queries(DArray *q_list, DArray *metadata_arr) {
+
+    for (size_t i = 0; i < DArray_count(q_list); i++) {
+
+        query *tmp_data = (query*) DArray_get(q_list, i);
+
+        arrange_predicates(tmp_data);
+
+        print_predicates(tmp_data);
+     //   execute_query(tmp_data , metadata_arr);
+    }
 }

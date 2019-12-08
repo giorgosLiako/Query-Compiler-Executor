@@ -18,14 +18,8 @@ int main() {
     check(read_relations(metadata_arr) != -1, "Something went wrong in reading the relations");
 
     DArray *query_list = parser();
-
-    for (size_t i = 0; i < DArray_count(query_list); i++) {
-
-        query *tmp_data = (query*) DArray_get(query_list, i);
-
-        execute_query(tmp_data , metadata_arr);
-    }
-
+    
+    execute_queries(query_list, metadata_arr);
 
     DArray_destroy(query_list);
     DArray_destroy(metadata_arr);
