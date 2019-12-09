@@ -29,12 +29,6 @@ int read_relations(DArray *);
 
 DArray* parser();
 
-void print_select(relation_column *, size_t);
-
-void print_predicates(predicate*, size_t);
-
-void print_relations(int*, size_t);
-
-void execute_query(query* , DArray* );
+void execute_queries(DArray * , DArray * );
 
 #endif
