@@ -412,7 +412,7 @@ mid_result *new_mid_results(size_t relations_size) {
 mid_result *get_mid_results(DArray *list, int relation_l, int relation_r, size_t relations_size){
     
     if (DArray_count(list) == 0) {
-        printf("new entity\n");
+        debug("new entity");
         mid_result *new = new_mid_results(relations_size);
         DArray_push(list, &new);
         return new;
@@ -424,7 +424,7 @@ mid_result *get_mid_results(DArray *list, int relation_l, int relation_r, size_t
             int count = 0;
             
             for (size_t j = 0; j < relations_size; j++){
-                printf("%d %d\n", temp[j].relation, relation_l);
+                debug("%d %d", temp[j].relation, relation_l);
                 if (temp[j].relation == relation_l) {
                     count++;
                 }
@@ -435,11 +435,11 @@ mid_result *get_mid_results(DArray *list, int relation_l, int relation_r, size_t
             }
 
             if (count > 0) {
-                printf("found old entity\n");
+                debug("found old entity");
                 return temp;
             }
         }
-        printf("new entity round2\n");
+        debug("new entity round2");
 
         mid_result *new = new_mid_results(relations_size);
         DArray_push(list, &new);
@@ -449,7 +449,6 @@ mid_result *get_mid_results(DArray *list, int relation_l, int relation_r, size_t
 
 static void print_predicates(query *qry) {
 
-    debug("predicates_Size = %d ", qry->predicates_size);
     for (ssize_t i = 0 ; i < qry->predicates_size ; i++) {
         predicate current = qry->predicates[i];
         
@@ -462,11 +461,10 @@ static void print_predicates(query *qry) {
             printf("%d.%d %c %d.%d| ", current.first.relation, current.first.column, current.operator, rel_col->relation, rel_col->column);
         }
     }
-    printf("\n");
+    printf("\n\n");
 }
 
 static void execute_query(query* q , DArray* metadata_arr) {
-    //first.xecute filter predicates 
 
     DArray *mid_results_list = DArray_create(sizeof(mid_result *), 2);
     
@@ -563,8 +561,12 @@ void execute_queries(DArray *q_list, DArray *metadata_arr) {
 
         query *tmp_data = (query*) DArray_get(q_list, i);
 
+        printf("Printing before arrangement\n");
+        print_predicates(tmp_data);
+
         arrange_predicates(tmp_data);
 
+        printf("\nPrinting after arrangement\n");
         print_predicates(tmp_data);
      //   execute_query(tmp_data , metadata_arr);
     }
