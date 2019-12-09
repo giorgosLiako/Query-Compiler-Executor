@@ -534,9 +534,9 @@ static void arrange_predicates(query *qry) {
         for (ssize_t j = i + 1 ; j < predicates_num ; j++) {
             predicate temp = qry->predicates[j];
             if (current.type == 1 && temp.type == 0) {
-                if (is_match(&current, &temp, 1)) {
-                    debug("i = %ld, j = %ld, found match!", i, j);
-                    is_arranged[index] = true;
+                if (is_match(&current, &temp, 1) && !is_arranged[j]) {
+                    debug("i = %ld, j = %ld, index = %ld, found match!", i, j, index);                            
+                    is_arranged[index] = true;  
                     swap_predicates(qry, j, index);
                     swap_predicates(qry, i, index - 1);
                     index++;
@@ -544,7 +544,7 @@ static void arrange_predicates(query *qry) {
             }  
             else if (current.type == 0 && temp.type == 0) {
                 if (is_match(&current, &temp, 0) && !is_arranged[j]) {
-                    debug("i = %ld, j = %ld, found match!", i, j);
+                    debug("i = %ld, j = %ld, index = %ld, found match!", i, j, index);
                     if (index + 1 != j) {
                         is_arranged[index] = true; 
                         swap_predicates(qry, index++, j);
