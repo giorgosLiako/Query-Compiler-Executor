@@ -293,14 +293,14 @@ mid_result* check_relation_exists(int relation , DArray *mid_result_list ,int* r
         mid_result *mid_results_arr = *(mid_result **) DArray_get(mid_result_list, i);
         
         for(size_t j = 0 ; j < (size_t)relations_size ; j++) {
-            printf("%d %d\n", relations[i], relation);
-            if (relations[i] == relation) {
+            printf("%d %d\n", relations[j], relation);
+            if (relations[j] == relation) {
                 if (mid_results_arr[j].relation == -1) {
                     mid_results_arr[j].relation = relation;
                     mid_results_arr[j].payloads = DArray_create(sizeof(int64_t), 100);
                 } 
                 else {
-                    *exists = i;
+                    *exists = j;
                 }
                 return mid_results_arr;
             }
