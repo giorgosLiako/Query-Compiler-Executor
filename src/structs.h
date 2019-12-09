@@ -27,7 +27,7 @@ typedef struct relation_column {
 
 typedef struct predicate{
     int type;
-    relation_column* first;
+    relation_column first;
     void* second;
     char operator;
 } predicate;

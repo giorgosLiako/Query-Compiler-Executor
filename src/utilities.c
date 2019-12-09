@@ -161,8 +161,11 @@ int read_relations(DArray *metadata_arr) {
 void parse_relations(char *string, query *q) {
     //find how many relations appear according to spaces
     int spaces = 0;
-    for (size_t i = 0; string[i] != '\0'; i++) 
-        if (string[i] == ' ') spaces++;
+    for (size_t i = 0; string[i] != '\0'; i++) {
+        if (string[i] == ' ') {
+            spaces++;
+        }
+    }
     
     //allocate memory
     int* relations = (int*) malloc((spaces + 1) * sizeof(int));
@@ -183,10 +186,13 @@ void parse_relations(char *string, query *q) {
 }
 
 void parse_predicates(char *string, query *q) {
+   
     int ampersands = 0;
-    for (size_t i = 0; string[i] != '\0'; i++) 
-        if (string[i] == '&') ampersands++;
-    
+    for (size_t i = 0; string[i] != '\0'; i++) {
+        if (string[i] == '&') {
+            ampersands++;
+        }
+    } 
 
     predicate *predicates = (predicate*) malloc((ampersands + 1) * sizeof(predicate));
     
@@ -200,29 +206,29 @@ void parse_predicates(char *string, query *q) {
         ptr += advance;
 
         if (sscanf(current_predicate, "%d.%d%c%d.%d", &v1, &v2, &operator, &v3, &v4) == 5){
-            relation_column *first = (relation_column*) malloc(sizeof(relation_column));
-            first->relation = v1;
-            first->column = v2;
+            relation_column first;
+            first.relation = v1;
+            first.column = v2;
 
-            relation_column *second = (relation_column*) malloc(sizeof(relation_column));
+            relation_column *second = MALLOC(relation_column, 1);
             second->relation = v3;
             second->column = v4;
 
             predicates[i].type = 0;
-            predicates[i].first = first;
+            predicates[i].first = first;          
             predicates[i].second = second;
             predicates[i++].operator = operator;
 
         } else if (sscanf(current_predicate, "%d.%d%c%d", &v1, &v2, &operator, &v3) == 4) {
-            relation_column *first = (relation_column*) malloc(sizeof(relation_column));
-            first->relation = v1;
-            first->column = v2;
+            relation_column first;   
+            first.relation = v1;
+            first.column = v2;
 
             int *second = (int*) malloc(sizeof(int));
             *second = v3;
 
             predicates[i].type = 1;
-            predicates[i].first = first;
+            predicates[i].first = first;            
             predicates[i].second = second;
             predicates[i++].operator = operator;
         }
@@ -271,7 +277,9 @@ DArray* parser() {
     printf("%s\n", "Insert workloads");
     while ((characters = getline(&line_ptr, &n, stdin)) != -1) {
         
-        if (strchr(line_ptr, 'F')) break;
+        if (line_ptr[0] == 'F') {
+            break;
+        }
         char relations[128], predicates[128], select[128];
        
         sscanf(line_ptr, "%[0-9 ]%*[|]%[0-9.=<>&]%*[|]%[0-9. ]", relations, predicates, select);
@@ -375,18 +383,18 @@ void execute_filter(predicate pred , int* relations , int relations_size ,DArray
 
     int relation_exists= -1; 
     
-    check_relation_exists(relations[pred.first->relation], mid_results_arr, relations , relations_size, &relation_exists);
+    check_relation_exists(relations[pred.first.relation], mid_results_arr, relations , relations_size, &relation_exists);
     
-    metadata *tmp_data = (metadata*) DArray_get(metadata_arr, relations[pred.first->relation]);
-    relation* rel = tmp_data->data[pred.first->column];
-    uint64_t num_tuples = tmp_data->data[pred.first->column]->num_tuples;
+    metadata *tmp_data = (metadata*) DArray_get(metadata_arr, relations[pred.first.relation]);
+    relation* rel = tmp_data->data[pred.first.column];
+    uint64_t num_tuples = tmp_data->data[pred.first.column]->num_tuples;
     uint64_t *number = (uint64_t*) pred.second; 
 
     if (relation_exists >= 0 )  {   
-        exec_filter_rel_exists(pred ,rel, *number , &mid_results_arr[pred.first->relation]);
+        exec_filter_rel_exists(pred ,rel, *number , &mid_results_arr[pred.first.relation]);
     }
     else if (relation_exists < 0) {  
-        exec_filter_rel_no_exists(pred, rel, *number ,  &mid_results_arr[pred.first->relation]);
+        exec_filter_rel_no_exists(pred, rel, *number ,  &mid_results_arr[pred.first.relation]);
     }
 
 }
@@ -441,28 +449,30 @@ mid_result *get_mid_results(DArray *list, int relation_l, int relation_r, size_t
 
 static void print_predicates(query *qry) {
 
+    debug("predicates_Size = %d ", qry->predicates_size);
     for (ssize_t i = 0 ; i < qry->predicates_size ; i++) {
         predicate current = qry->predicates[i];
         
         if (current.type == 1) {
             int second = *(int *) current.second;
-            printf("%d.%d %c %d |", current.first->relation, current.first->column, current.operator, second);
+            printf("%d.%d %c %d|", current.first.relation, current.first.column, current.operator, second);
         }
         else {
             relation_column *rel_col = (relation_column *) current.second;
-            printf("%d.%d %c %d.%d | ", current.first->relation, current.first->column, current.operator, rel_col->relation, rel_col->column);
+            printf("%d.%d %c %d.%d| ", current.first.relation, current.first.column, current.operator, rel_col->relation, rel_col->column);
         }
     }
+    printf("\n");
 }
 
 static void execute_query(query* q , DArray* metadata_arr) {
-    //first execute filter predicates 
+    //first.xecute filter predicates 
 
     DArray *mid_results_list = DArray_create(sizeof(mid_result *), 2);
     
     for (size_t i = 0 ; i < (size_t)q->predicates_size ; i++) {
        
-        mid_result *temp = get_mid_results(mid_results_list, q->predicates[i].first->relation, -1, q->relations_size);
+        mid_result *temp = get_mid_results(mid_results_list, q->predicates[i].first.relation, -1, q->relations_size);
        
         if( q->predicates[i].type == 1) { //filter predicate
             execute_filter( q->predicates[i] , q->relations , q->relations_size , metadata_arr , temp);
@@ -485,17 +495,17 @@ static bool is_match(predicate *lhs, predicate *rhs, bool is_filter) {
    
     if (is_filter) {
         relation_column *second = (relation_column *) rhs->second;
-        return ( (lhs->first->column == rhs->first->column && lhs->first->relation == rhs->first->relation) || (lhs->first->column == second->column && lhs->first->relation == second->column) );
+        return ( (lhs->first.column == rhs->first.column && lhs->first.relation == rhs->first.relation) || (lhs->first.column == second->column && lhs->first.relation == second->relation) );
     } else {
         relation_column *lhs_second = (relation_column *) lhs->second;
         relation_column *rhs_second = (relation_column *) rhs->second;
-        if (lhs->first->column == rhs->first->column && lhs->first->relation == rhs->first->relation) {
+        if (lhs->first.column == rhs->first.column && lhs->first.relation == rhs->first.relation) {
             return true;
         }
-        else if (lhs->first->column == rhs_second->column && lhs->first->relation == rhs_second->relation) {
+        else if (lhs->first.column == rhs_second->column && lhs->first.relation == rhs_second->relation) {
             return true;
         }
-        else if (lhs_second->column == rhs->first->column && lhs_second->relation == rhs->first->relation) {
+        else if (lhs_second->column == rhs->first.column && lhs_second->relation == rhs->first.relation) {
             return true;
         }
         else if (lhs_second->column == rhs_second->column && lhs_second->relation == rhs_second->relation) {
@@ -527,6 +537,7 @@ static void arrange_predicates(query *qry) {
             predicate temp = qry->predicates[j];
             if (current.type == 1 && temp.type == 0) {
                 if (is_match(&current, &temp, 1)) {
+                    debug("i = %ld, j = %ld, found match!", i, j);
                     is_arranged[index] = true;
                     swap_predicates(qry, j, index);
                     swap_predicates(qry, i, index - 1);
@@ -535,6 +546,7 @@ static void arrange_predicates(query *qry) {
             }  
             else if (current.type == 0 && temp.type == 0) {
                 if (is_match(&current, &temp, 0) && !is_arranged[j]) {
+                    debug("i = %ld, j = %ld, found match!", i, j);
                     if (index + 1 != j) {
                         is_arranged[index] = true; 
                         swap_predicates(qry, index++, j);
