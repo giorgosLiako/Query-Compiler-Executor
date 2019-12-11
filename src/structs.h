@@ -21,28 +21,29 @@ typedef struct metadata {
 } metadata;
 
 typedef struct relation_column {
-    int relation;
-    int column;
+    uint64_t relation;
+    uint64_t column;
 } relation_column;
 
 typedef struct predicate{
-    int type;
+    int8_t type;
     relation_column first;
-    void* second;
+    void *second;
     char operator;
 } predicate;
 
 typedef struct query {
-    int* relations;
-    int relations_size;
+    uint32_t* relations;
+    size_t relations_size;
     predicate* predicates;
-    int predicates_size;
+    size_t predicates_size;
     relation_column* select;
-    int select_size;
+    size_t select_size;
 } query;
 
 typedef struct mid_result {
-    int relation;
+    uint32_t relation;
+    int32_t last_column_sorted;
     DArray* payloads;
 } mid_result;
 
