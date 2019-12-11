@@ -4,11 +4,11 @@
 #include <sys/types.h>
 #include <time.h>
 #include "../src/alloc_free.h"
-#include "../src/sort_merge.h"
 #include "../src/structs.h"
 #include "../src/dbg.h"
 #include "../src/utilities.h"
 #include "../src/DArray.h"
+#include "../src/parsing.h"
 
 
 int main() {
@@ -17,7 +17,8 @@ int main() {
 
     check(read_relations(metadata_arr) != -1, "Something went wrong in reading the relations");
 
-    DArray *query_list = parser();
+    DArray *query_list = parser(metadata_arr);
+    check(query_list != NULL, "Parsing failed");
     
     execute_queries(query_list, metadata_arr);
 
@@ -27,6 +28,6 @@ int main() {
     return EXIT_SUCCESS;
 
      error:
-         FREE(metadata_arr);
+         DArray_destroy(metadata_arr);
          return EXIT_FAILURE;
 }

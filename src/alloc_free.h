@@ -1,7 +1,7 @@
 #ifndef alloc_free_h
 #define alloc_free_h
 
-#define MALLOC(type, size) ( (type*) malloc((size) * sizeof(type)))
+#define MALLOC(type, items) ( (type*) malloc((items) * sizeof(type)))
 
 #define CALLOC(items, size, type) ( (type*) calloc(items, size))
 

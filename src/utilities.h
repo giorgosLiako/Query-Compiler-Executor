@@ -27,8 +27,12 @@ void swap_arrays(relation *, relation *);
 
 int read_relations(DArray *);
 
+ssize_t relation_exists(DArray *, uint32_t );
+
 DArray* parser();
 
 void execute_queries(DArray * , DArray * );
+
+void print_predicates(query *);
 
 #endif
