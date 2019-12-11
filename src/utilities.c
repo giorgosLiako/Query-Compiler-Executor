@@ -466,7 +466,7 @@ static void print_predicates(query *qry) {
 
 static void execute_query(query* q , DArray* metadata_arr) {
 
-    DArray *mid_results_list = DArray_create(sizeof(mid_result *), 2);
+    DArray *mid_results_list = DArray_create(sizeof(mid_result*), 2);
     
     for (size_t i = 0 ; i < (size_t)q->predicates_size ; i++) {
        
@@ -568,6 +568,6 @@ void execute_queries(DArray *q_list, DArray *metadata_arr) {
 
         printf("\nPrinting after arrangement\n");
         print_predicates(tmp_data);
-     //   execute_query(tmp_data , metadata_arr);
+        execute_query(tmp_data , metadata_arr);
     }
 }
