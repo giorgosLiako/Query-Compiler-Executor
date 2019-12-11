@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include "DArray.h"
 #include "structs.h"
 #include "alloc_free.h"

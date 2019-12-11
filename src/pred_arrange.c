@@ -38,7 +38,9 @@ static inline ssize_t group_filters(query *qry) {
         }
     }
 
-    swap_predicates(qry, index - 1, max_index); 
+    if (index != 0) {
+        swap_predicates(qry, index - 1, max_index); 
+    }
 
     return index;
 }

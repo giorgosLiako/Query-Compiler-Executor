@@ -14,6 +14,7 @@
 #include "pred_arrange.h"
 #include "join.h"
 #include "filter.h"
+#include "structs.h"
 
 //function to build a histogram
 void build_histogram(relation *rel, histogram *hist, uint8_t wanted_byte, int start, int size) {
@@ -181,22 +182,26 @@ ssize_t relation_exists(DArray *mid_results, uint32_t relation) {
     return found;
 }
 
+static void print_sums(DArray *mid_results, DArray *metadata_arr, relation_column *selects, size_t select_size) {
 
-void print_predicates(query *qry) {
+    for (size_t i = 0 ; i < select_size ; i++) {
+        uint32_t rel = selects[i].relation;
+        uint32_t col = selects[i].column;
 
-    for (size_t i = 0 ; i < qry->predicates_size ; i++) {
-        predicate current = qry->predicates[i];
-        
-        if (current.type == 1) {
-            uint32_t second = *(uint32_t *) current.second;
-            printf("%lu.%lu %c %u|", current.first.relation, current.first.column, current.operator, second);
+        mid_result *res = (mid_result *) DArray_get(mid_results, rel);
+
+        if (DArray_count(res->payloads) == 0) {
+            printf("%s", "NULL\n");
+        } else {
+            uint64_t sum = 0;
+            relation *tmp_rel = ((metadata *) DArray_get(metadata_arr, rel))->data[col];
+            for (ssize_t j = 0 ; j < DArray_count(res->payloads) ; j++) {
+                sum += tmp_rel->tuples[*(uint64_t *) DArray_get(res->payloads, j)].key;
+            }
+            printf("%lu ", sum);
         }
-        else {
-            relation_column *rel_col = (relation_column *) current.second;
-            printf("%lu.%lu %c %lu.%lu| ", current.first.relation, current.first.column, current.operator, rel_col->relation, rel_col->column);
-        }
+        printf("\n");
     }
-    printf("\n\n");
 }
 
 static int execute_query(query* q , DArray* metadata_arr) {
@@ -210,12 +215,46 @@ static int execute_query(query* q , DArray* metadata_arr) {
         } else {    //join predicate
            check(execute_join(&q->predicates[i], q->relations, metadata_arr, mid_results) != -1, "Join failed!");
         }
-    }	
+    }
+
+    print_sums(mid_results, metadata_arr, q->selects, q->select_size);
 
     return 0;
 
     error:
         return -1;
+}
+
+void print_relations(uint32_t* relations, size_t size){
+    printf("Relations: \n\t");
+    for (size_t i = 0; i < size; i++) {
+        printf("%u ", relations[i]);
+    }
+    printf("\n");
+}
+
+void print_predicates(predicate* predicates, size_t size) {
+    printf("Predicates: \n");
+    for (size_t i = 0; i < size; i++) {
+        if (predicates[i].type == 0) {
+            relation_column *temp = (relation_column*) predicates[i].second;
+            printf("\t%lu.%lu %c %lu.%lu\n", predicates[i].first.relation, predicates[i].first.column, predicates[i].operator
+                    , temp->relation, temp->column);
+        } else if (predicates[i].type == 1) {
+            int *temp = (int*) predicates[i].second;
+            printf("\t%lu.%lu %c %d\n", predicates[i].first.relation, predicates[i].first.column, predicates[i].operator
+                    , *temp);
+        }
+    }
+}
+
+void print_select(relation_column* r_c, size_t size){
+    printf("Select: \n");
+    for (size_t i = 0; i < size; i++){
+        printf("\t%lu.%lu ", r_c[i].relation, r_c[i].column);
+    }
+    printf("\n");
+    
 }
 
 void execute_queries(DArray *q_list, DArray *metadata_arr) {
@@ -224,13 +263,8 @@ void execute_queries(DArray *q_list, DArray *metadata_arr) {
 
         query *tmp_data = (query*) DArray_get(q_list, i);
 
-        printf("Printing before arrangement\n");
-        print_predicates(tmp_data);
-
         arrange_predicates(tmp_data);
 
-        printf("\nPrinting after arrangement\n");
-        print_predicates(tmp_data);
-     //   execute_query(tmp_data , metadata_arr);
+        //execute_query(tmp_data , metadata_arr);
     }
 }
