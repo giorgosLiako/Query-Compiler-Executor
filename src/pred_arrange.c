@@ -150,11 +150,31 @@ static void attach_to_filter(query *qry) {
     }
 }
 
+ssize_t liakos_group_filters(query * qry)
+{
+    ssize_t index = 0 ;
+    for (ssize_t i = 1 ; i < (ssize_t) qry->predicates_size  ; i++){
+        
+        if( qry->predicates[i].type == 1){
+            ssize_t swaps = i ; 
+            for(ssize_t j=0 ; j < i-index ; j++){
+                
+                swap_predicates(qry, swaps , swaps-1); 
+                swaps--;
+            }
+            index++;
+        } 
+    }
+    return index;         
+}
+
 void arrange_predicates(query *qry) {
 
-    ssize_t index = group_filters(qry);
+    ssize_t index = liakos_group_filters(qry);
 
-    index = group_identical(qry, index);
+    //ssize_t index = group_filters(qry);
+
+     index = group_identical(qry, index);
 
     attach_to_filter(qry);
 

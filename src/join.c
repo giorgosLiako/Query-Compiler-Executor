@@ -363,7 +363,7 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
 
     }
     else if (join_id == SCAN_JOIN) {
-            ssize_t index = relation_exists(mid_results, relR);
+        ssize_t index = relation_exists(mid_results, relR);
         if (index == -1) {
             log_err("Something went really wrong");
             exit(EXIT_FAILURE);

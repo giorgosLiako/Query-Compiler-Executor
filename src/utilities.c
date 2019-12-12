@@ -242,6 +242,7 @@ static int execute_query(query* q , DArray* metadata_arr) {
     print_predicates(q->predicates, q->predicates_size);
     print_select(q->selects, q->select_size);
     
+  
     for (size_t i = 0 ; i < (size_t)q->predicates_size ; i++) {
 
         if( q->predicates[i].type == 1) { //filter predicate
@@ -269,6 +270,7 @@ static int execute_query(query* q , DArray* metadata_arr) {
 }
 
 void execute_queries(DArray *q_list, DArray *metadata_arr) {
+
 
     for (size_t i = 0; i < DArray_count(q_list); i++) {
 
