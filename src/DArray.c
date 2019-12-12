@@ -26,8 +26,9 @@ DArray* DArray_create(size_t element_size, int32_t initial_capacity) {
 void DArray_clear(DArray *array) {
 
 	if (array->element_size > 0) {
-		for (size_t i = 0 ; i < DArray_count(array) ; i++) {
-			FREE(array->contents[i]);
+		for (size_t i = 0 ; i <  DArray_count(array) ; i++) {
+			if (array->contents[i] != NULL)
+				FREE(array->contents[i]);
 		}
 	}
 	array->end = 0;

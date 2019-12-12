@@ -37,7 +37,7 @@ typedef struct query {
     size_t relations_size;
     predicate* predicates;
     size_t predicates_size;
-    relation_column* select;
+    relation_column* selects;
     size_t select_size;
 } query;
 

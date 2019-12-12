@@ -22,7 +22,28 @@ int main() {
     
     execute_queries(query_list, metadata_arr);
 
+    for (size_t i = 0 ; i < DArray_count(query_list); i++){
+        query *qr = (query *) DArray_get(query_list, i);
+        if (qr != NULL){
+            FREE(qr->relations);
+            for(size_t j = 0 ; j < qr->predicates_size ; j++)
+                FREE(qr->predicates[j].second);
+            FREE(qr->predicates);
+            FREE(qr->selects);
+        }
+    }
     DArray_destroy(query_list);
+    
+    for (size_t i = 0 ; i < DArray_count(metadata_arr); i++){
+        metadata *met = (metadata *) DArray_get(metadata_arr, i);
+        if (met->data[i] != NULL){
+            for(size_t j = 0 ; j < met->columns ; j++){
+                FREE(met->data[j]->tuples);
+                FREE(met->data[j]);
+            }
+            FREE(met->data);
+        }
+    }
     DArray_destroy(metadata_arr);
    
     return EXIT_SUCCESS;

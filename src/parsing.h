@@ -7,6 +7,6 @@
 #include "DArray.h"
 #include "structs.h"
 
-DArray* parser(DArray *metadata_arr);
+DArray* parser();
 
 #endif

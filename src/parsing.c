@@ -111,71 +111,70 @@ static void parse_select(char* string, query *q) {
         ptr++;
     }
 
-    q->select = selects;
+    q->selects = selects;
     q->select_size = spaces + 1;
 }
 
-static inline int check_relations(query q, DArray *metadata_arr) {
+static void rename_relations(query *qry) {
 
-    for (size_t i = 0 ; i < q.relations_size ; i++) {
-        if (q.relations[i] > DArray_count(metadata_arr)) {
-            log_err("Relation %u is invalid, exiting", q.relations[i]);
-            return -1;
+    int32_t *removed = MALLOC(int32_t, qry->relations_size);
+    
+    for (size_t i = 0 ; i < qry->relations_size ; i++) {
+        removed[i] = -1;
+    }
+
+    for (size_t i = 0 ; i < qry->relations_size ; i++) {
+        for (size_t j = 0 ; j < qry->relations_size ; j++) {
+            if (i != j && qry->relations[i] == qry->relations[j] && removed[i] == -1) {
+                for (size_t z = 0 ; z < qry->predicates_size ; z++) {
+                    if (qry->predicates[z].type == 1 && qry->predicates[z].first.relation == j) {
+                        qry->predicates[z].first.relation = i;
+                        removed[j] = j;
+                    } 
+                    else if (qry->predicates[z].type == 0) {
+                        relation_column *second = (relation_column *) qry->predicates[z].second;
+                        if (qry->predicates[z].first.relation == j) {
+                            qry->predicates[z].first.relation = i;
+                            removed[j] = j;
+                        }
+                        if (second->relation == j) {
+                            second->relation = i;
+                            removed[j] = j;
+                        }
+                    }
+                }
+                for (size_t z = 0 ; z < qry->select_size ; z++) {
+                    if (qry->selects[z].relation == j) {
+                        qry->selects[z].relation = i;
+                    }
+                }
+            }
         }
     }
-    return 0;
-}
 
-static inline int check_predicates(query q, DArray *metadata_arr) {
-
-    for (size_t i = 0 ; i < q.predicates_size ; i++) {
-        if (q.predicates[i].type == 1) {
-            if (q.predicates[i].first.relation >= q.relations_size) {
-                log_err("Predicate %lu is invalid! Relation id too big to match, exiting", i);
-                return -1;
+    size_t rel_size = qry->relations_size;
+    for (size_t i = 0 ; i < rel_size ; i++) {
+        if (removed[i] != -1) {
+            for (size_t j = i ; j < rel_size - 1 ; j++) {
+                qry->relations[j] = qry->relations[j + 1];
             }
-            if (q.predicates[i].first.column >= ((metadata *) DArray_get(metadata_arr, q.predicates[i].first.relation))->columns) {
-                log_err("Predicate %lu is invalid! Column with number %lu doesn't exist in this relation, exiting", i, q.predicates[i].first.column);
-                return -1;
-            }
-        } else {            
-            relation_column *rel_col = (relation_column *) q.predicates[i].second;
-            if (q.predicates[i].first.relation >= q.relations_size || rel_col->relation >= q.relations_size) {
-                log_err("Predicate %lu is invalid! Relation id too big to match, exiting", i);
-                return -1;
-            }
-            if (q.predicates[i].first.column >= ((metadata *) DArray_get(metadata_arr, q.predicates[i].first.relation))->columns || rel_col->column >= ((metadata *) DArray_get(metadata_arr, rel_col->relation))->columns) {
-                log_err("Predicate %lu is invalid! Couldn't match one of operands column to the relation, exiting", i);
-                return -1;
-            }
+            qry->relations_size--;
         }
     }
-    return 0;
+
+
+    FREE(removed);
 }
 
-static int check_select(query q, DArray *metadata_arr) {
 
-    for (size_t i = 0 ; i < q.select_size ; i++) {
-        if (q.select[i].relation >= q.relations_size) {
-            log_err("Select %lu is invalid! Relation id too big to match, exiting", i);
-            return -1;
-        }
-        if (q.select[i].column >= ((metadata *) DArray_get(metadata_arr, q.select[i].relation))->columns) {
-            log_err("Select %lu is invalid! Column too big to match at a current relation, exiting", i);
-            return -1;
-        }
-    }
-    return 0;
-}
-
-DArray* parser(DArray *metadata_arr) {
+DArray* parser() {
     DArray* queries = DArray_create(sizeof(query), 10);
 
     char* line_ptr = NULL;
     size_t n = 0;
     int characters;
     
-    printf("%s\n", "Insert workloads");
+    //printf("%s\n", "Insert workloads");
     while ((characters = getline(&line_ptr, &n, stdin)) != -1) {
         
         if (line_ptr[0] == 'F') {
@@ -187,25 +186,19 @@ DArray* parser(DArray *metadata_arr) {
 
         query new_query;
         parse_relations(relations, &new_query);
-      //  if (check_relations(new_query, metadata_arr) != 0) {
-    //        goto error;
-     //   }
         
         parse_predicates(predicates, &new_query);
-    //    if (check_predicates(new_query, metadata_arr) != 0) {
-     //       goto error;
-     //   }
         
         parse_select(select,  &new_query);
-       // if (check_select(new_query, metadata_arr) != 0) {
-       //     goto error;
-      //  }
+
+        rename_relations(&new_query);
         
         DArray_push(queries, &new_query);
 
     }
     check(characters != -1, "Getline failed");
 
+    FREE(line_ptr);
     return queries;
 
     error:

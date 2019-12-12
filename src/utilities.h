@@ -33,6 +33,4 @@ DArray* parser();
 
 void execute_queries(DArray * , DArray * );
 
-void print_predicates(query *);
-
 #endif
