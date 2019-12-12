@@ -231,6 +231,6 @@ void execute_queries(DArray *q_list, DArray *metadata_arr) {
 
         printf("\nPrinting after arrangement\n");
         print_predicates(tmp_data);
-        execute_query(tmp_data , metadata_arr);
+        //execute_query(tmp_data , metadata_arr);
     }
 }
