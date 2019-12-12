@@ -128,7 +128,7 @@ int read_relations(DArray *metadata_arr) {
 
     printf("%s\n", "Insert relations");
     while (getline(&linptr, &n, stdin) != -1) {
-        if (!strncmp(linptr, "Done\n", strlen("Done\n")) || !strncmp(linptr,"done\n", strlen("done\n"))) {
+        if (!strncmp(linptr, "Done", strlen("Done")) || !strncmp(linptr,"done", strlen("done"))) {
             break;
         }
         
@@ -213,7 +213,7 @@ static int execute_query(query* q , DArray* metadata_arr) {
         if( q->predicates[i].type == 1) { //filter predicate
             check(execute_filter(&q->predicates[i], q->relations[i], metadata_arr, mid_results) != -1, "");
         } else {    //join predicate
-           check(execute_join(&q->predicates[i], q->relations, metadata_arr, mid_results) != -1, "Join failed!");
+           check(execute_join(&q->predicates[i], metadata_arr, mid_results) != -1, "Join failed!");
         }
     }
 
@@ -222,8 +222,9 @@ static int execute_query(query* q , DArray* metadata_arr) {
     for (size_t i = 0 ; i < DArray_count(mid_results) ; i++) {
         mid_result*res = (mid_result *) DArray_get(mid_results, i);
 
-        if (res != NULL)
+        if (res != NULL) {
             DArray_destroy(res->payloads);
+        }
     }    
     DArray_destroy(mid_results);
 

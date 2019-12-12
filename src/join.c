@@ -140,7 +140,7 @@ static int allocate_relation(relation *rel_arr[], DArray *metadata_arr, uint64_t
         return -1;
 }
 
-static int build_relations(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results, relation *rel[]) {
+static int build_relations(predicate *pred, DArray *metadata_arr, DArray *mid_results, relation *rel[]) {
 
 
     uint64_t lhs_rel = pred->first.relation;
@@ -361,10 +361,10 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
     }
 }
 
-int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results) {
+int execute_join(predicate *pred, DArray *metadata_arr, DArray *mid_results) {
 
     relation *rel[2];
-    int retval = build_relations(pred, relations, metadata_arr, mid_results, rel);
+    int retval = build_relations(pred, metadata_arr, mid_results, rel);
 
     int error = 0;
 
