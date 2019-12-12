@@ -160,7 +160,6 @@ static int build_relations(predicate *pred, uint32_t *relations, DArray *metadat
     /*Check if relations exist in the mid results and if they are sorted
     and create them accordingly*/
     int error = 0;
-
     
     if (lhs_index != -1 && rhs_index == -1) {
         error = allocate_relation_mid_results(rel, mid_results, metadata_arr, lhs_index, lhs_rel, lhs_col, 0);
@@ -204,13 +203,12 @@ static int build_relations(predicate *pred, uint32_t *relations, DArray *metadat
 
         check(error != -1, "Couldn't allocate relations");
 
-        mid_result *mid_res = (mid_result *) DArray_get(mid_results, lhs_index);
-        mid_res->last_column_sorted = lhs_col;
-
-        mid_res = (mid_result *) DArray_get(mid_results, rhs_index);
-        mid_res->last_column_sorted = rhs_col;
-
-        return CLASSIC_JOIN;
+        if (rhs_rel != lhs_rel) {
+            return CLASSIC_JOIN;
+        }
+        else {
+            return SCAN_JOIN;
+        }
     }
 
     return 0;
