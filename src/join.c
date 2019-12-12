@@ -353,7 +353,7 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         tmp.relation = relS;
         DArray_push(mid_results, &tmp);
 
-                ssize_t index = relation_exists(mid_results, relR);
+        ssize_t index = relation_exists(mid_results, relR);
         if (index == -1) {
             log_err("Something went really wrong");
             exit(EXIT_FAILURE);
@@ -418,7 +418,12 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
         return -1;
     }
 
-    update_mid_results(join_res, mid_results, relations[pred->first.relation], pred->first.column, relations[((relation_column *) pred->second)->relation], ((relation_column *) pred->second)->column, retval);
+    if (rel[0]->num_tuples < rel[1]->num_tuples) {
+        update_mid_results(join_res, mid_results, relations[pred->first.relation], pred->first.column, relations[((relation_column *) pred->second)->relation], ((relation_column *) pred->second)->column, retval);
+    }
+    else {
+        update_mid_results(join_res, mid_results, relations[((relation_column *) pred->second)->relation], ((relation_column *) pred->second)->column, relations[pred->first.relation], pred->first.column, retval);
+    }
 
 
     FREE(rel[0]->tuples);
