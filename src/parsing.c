@@ -177,7 +177,6 @@ DArray* parser() {
     printf("%s\n", "Insert workloads");
     while ((characters = getline(&line_ptr, &n, stdin)) != -1) {
         
-        printf("%s\n", line_ptr);
         if (line_ptr[0] == 'F') {
             break;
         }

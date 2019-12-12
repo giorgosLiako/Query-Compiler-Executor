@@ -128,7 +128,7 @@ int read_relations(DArray *metadata_arr) {
 
     printf("%s\n", "Insert relations");
     while (getline(&linptr, &n, stdin) != -1) {
-        if (!strncmp(linptr, "Done", strlen("Done")) || !strncmp(linptr,"done", strlen("done"))) {
+        if (!strncmp(linptr, "Done\n", strlen("Done\n")) || !strncmp(linptr,"done\n", strlen("done\n"))) {
             break;
         }
         
@@ -171,24 +171,21 @@ ssize_t relation_exists(DArray *mid_results, uint32_t relation) {
         }
     }
 
-    if (found == -1) {
-        mid_result res;
-        res.relation = relation;
-        res.last_column_sorted = -1;
-        res.payloads = DArray_create(sizeof(uint64_t), 100);
-        DArray_push(mid_results, &res);
-    }
-
     return found;
 }
 
-static void print_sums(DArray *mid_results, DArray *metadata_arr, relation_column *selects, size_t select_size) {
+static void print_sums(DArray *mid_results, uint32_t *relations, DArray *metadata_arr, relation_column *selects, size_t select_size) {
 
     for (size_t i = 0 ; i < select_size ; i++) {
-        uint32_t rel = selects[i].relation;
+        uint32_t rel = relations[selects[i].relation];
         uint32_t col = selects[i].column;
 
-        mid_result *res = (mid_result *) DArray_get(mid_results, rel);
+        ssize_t index = relation_exists(mid_results, rel);
+        if (index == -1) {
+            log_err("Something went really wrong...");
+            exit(EXIT_FAILURE);
+        }
+        mid_result *res = DArray_get(mid_results, index);
 
         if (DArray_count(res->payloads) == 0) {
             printf("%s", "NULL\n");
@@ -200,38 +197,8 @@ static void print_sums(DArray *mid_results, DArray *metadata_arr, relation_colum
             }
             printf("%lu ", sum);
         }
-        printf("\n");
     }
-}
-
-static int execute_query(query* q , DArray* metadata_arr) {
-
-    DArray *mid_results = DArray_create(sizeof(mid_result), 4);
-    
-    for (size_t i = 0 ; i < (size_t)q->predicates_size ; i++) {
-
-        if( q->predicates[i].type == 1) { //filter predicate
-            check(execute_filter(&q->predicates[i], q->relations[i], metadata_arr, mid_results) != -1, "");
-        } else {    //join predicate
-           check(execute_join(&q->predicates[i], metadata_arr, mid_results) != -1, "Join failed!");
-        }
-    }
-
-    print_sums(mid_results, metadata_arr, q->selects, q->select_size);
-
-    for (size_t i = 0 ; i < DArray_count(mid_results) ; i++) {
-        mid_result*res = (mid_result *) DArray_get(mid_results, i);
-
-        if (res != NULL) {
-            DArray_destroy(res->payloads);
-        }
-    }    
-    DArray_destroy(mid_results);
-
-    return 0;
-
-    error:
-        return -1;
+    printf("\n");
 }
 
 void print_relations(uint32_t* relations, size_t size){
@@ -264,6 +231,41 @@ void print_select(relation_column* r_c, size_t size){
     }
     printf("\n");
     
+}
+
+static int execute_query(query* q , DArray* metadata_arr) {
+
+    DArray *mid_results = DArray_create(sizeof(mid_result), 4);
+
+    debug("Executing query : ");
+    print_relations(q->relations, q->relations_size);
+    print_predicates(q->predicates, q->predicates_size);
+    print_select(q->selects, q->select_size);
+    
+    for (size_t i = 0 ; i < (size_t)q->predicates_size ; i++) {
+
+        if( q->predicates[i].type == 1) { //filter predicate
+            check(execute_filter(&q->predicates[i], q->relations, metadata_arr, mid_results) != -1, "");
+        } else {    //join predicate
+           check(execute_join(&q->predicates[i], q->relations, metadata_arr, mid_results) != -1, "Join failed!");
+        }
+    }
+
+    print_sums(mid_results, q->relations, metadata_arr, q->selects, q->select_size);
+
+    for (size_t i = 0 ; i < DArray_count(mid_results) ; i++) {
+        mid_result*res = (mid_result *) DArray_get(mid_results, i);
+
+        if (res != NULL) {
+            DArray_destroy(res->payloads);
+        }
+    }    
+    DArray_destroy(mid_results);
+
+    return 0;
+
+    error:
+        return -1;
 }
 
 void execute_queries(DArray *q_list, DArray *metadata_arr) {

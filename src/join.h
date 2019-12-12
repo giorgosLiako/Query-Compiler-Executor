@@ -23,6 +23,6 @@ typedef struct result {
 } join_result;
 
 
-int execute_join(predicate *pred, DArray *metadata_arr, DArray *mid_results);
+int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results);
 
 #endif

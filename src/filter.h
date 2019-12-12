@@ -11,6 +11,6 @@
 #include "queue.h"
 #include "quicksort.h"
 
-int execute_filter(predicate *pred, uint32_t lhs_rel, DArray *metadata_arr, DArray *mid_results);
+int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results);
 
 #endif
