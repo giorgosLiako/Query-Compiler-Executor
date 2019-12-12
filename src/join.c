@@ -400,6 +400,7 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
 
     update_mid_results(join_res, mid_results, pred->first.relation, pred->first.column, ((relation_column *) pred->second)->relation, ((relation_column *) pred->second)->column, retval);
 
+
     FREE(rel[0]->tuples);
     FREE(rel[0]);
     FREE(rel[1]->tuples);

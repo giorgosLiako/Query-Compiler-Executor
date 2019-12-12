@@ -175,7 +175,7 @@ ssize_t relation_exists(DArray *mid_results, uint32_t relation) {
         mid_result res;
         res.relation = relation;
         res.last_column_sorted = -1;
-        res.payloads = DArray_create(sizeof(uint64_t), 20);
+        res.payloads = DArray_create(sizeof(uint64_t), 100);
         DArray_push(mid_results, &res);
     }
 
@@ -218,6 +218,14 @@ static int execute_query(query* q , DArray* metadata_arr) {
     }
 
     print_sums(mid_results, metadata_arr, q->selects, q->select_size);
+
+    for (size_t i = 0 ; i < DArray_count(mid_results) ; i++) {
+        mid_result*res = (mid_result *) DArray_get(mid_results, i);
+
+        if (res != NULL)
+            DArray_destroy(res->payloads);
+    }    
+    DArray_destroy(mid_results);
 
     return 0;
 
@@ -265,6 +273,6 @@ void execute_queries(DArray *q_list, DArray *metadata_arr) {
 
         arrange_predicates(tmp_data);
 
-        //execute_query(tmp_data , metadata_arr);
+        execute_query(tmp_data , metadata_arr);
     }
 }

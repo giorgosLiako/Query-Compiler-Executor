@@ -174,7 +174,7 @@ DArray* parser() {
     size_t n = 0;
     int characters;
     
-    printf("%s\n", "Insert workloads");
+    //printf("%s\n", "Insert workloads");
     while ((characters = getline(&line_ptr, &n, stdin)) != -1) {
         
         if (line_ptr[0] == 'F') {
@@ -198,6 +198,7 @@ DArray* parser() {
     }
     check(characters != -1, "Getline failed");
 
+    FREE(line_ptr);
     return queries;
 
     error:
