@@ -188,7 +188,7 @@ static void print_sums(DArray *mid_results, uint32_t *relations, DArray *metadat
         mid_result *res = DArray_get(mid_results, index);
 
         if (DArray_count(res->payloads) == 0) {
-            printf("%s", "NULL\n");
+            printf("%s", "NULL ");
         } else {
             uint64_t sum = 0;
             relation *tmp_rel = ((metadata *) DArray_get(metadata_arr, rel))->data[col];

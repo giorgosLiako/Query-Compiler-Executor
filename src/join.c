@@ -169,7 +169,7 @@ static int build_relations(predicate *pred, uint32_t *relations, DArray *metadat
 
         mid_result *mid_res = (mid_result *) DArray_get(mid_results, lhs_index);
         if (mid_res->last_column_sorted == (int32_t) lhs_col) {
-            return JOIN_SORT_RHS;
+            return  JOIN_SORT_RHS;
         } else {
             mid_res->last_column_sorted = lhs_col;
             return CLASSIC_JOIN;
@@ -360,6 +360,7 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         }
         mid_result *update = (mid_result *) DArray_get(mid_results, index);
         update->payloads = payloads_R;
+  
 
     }
     else if (join_id == SCAN_JOIN) {
@@ -418,12 +419,13 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
         return -1;
     }
 
-    if (rel[0]->num_tuples < rel[1]->num_tuples) {
-        update_mid_results(join_res, mid_results, relations[pred->first.relation], pred->first.column, relations[((relation_column *) pred->second)->relation], ((relation_column *) pred->second)->column, retval);
+    
+    if (rel[0]->num_tuples >= rel[1]->num_tuples && retval != SCAN_JOIN) {
+        DArray *tmp = join_res.results[0];
+        join_res.results[0] = join_res.results[1];
+        join_res.results[1] = tmp;  
     }
-    else {
-        update_mid_results(join_res, mid_results, relations[((relation_column *) pred->second)->relation], ((relation_column *) pred->second)->column, relations[pred->first.relation], pred->first.column, retval);
-    }
+    update_mid_results(join_res, mid_results, relations[pred->first.relation], pred->first.column, relations[((relation_column *) pred->second)->relation], ((relation_column *) pred->second)->column, retval);
 
 
     FREE(rel[0]->tuples);
