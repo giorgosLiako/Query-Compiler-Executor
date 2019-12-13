@@ -57,7 +57,6 @@ static inline bool is_identical(predicate *lhs, predicate *rhs) {
         return true;
     }
 
- 
     return false;
 }
 

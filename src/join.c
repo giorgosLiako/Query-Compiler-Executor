@@ -92,6 +92,18 @@ static int iterative_sort(relation *rel) {
         return -1;
 }
 
+
+bool is_sorted(relation *rel) {
+
+    for (ssize_t i = 0 ; i < rel->num_tuples - 1; i++) {
+        if (rel->tuples[i + 1].key < rel->tuples[i].key) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 static int allocate_relation_mid_results(relation *rel_arr[], DArray *mid_results, DArray *metadata_arr, ssize_t index, uint64_t rel, uint64_t col, ssize_t rel_arr_index) {
 
     relation *temp_rel = MALLOC(relation, 1);
@@ -109,6 +121,8 @@ static int allocate_relation_mid_results(relation *rel_arr[], DArray *mid_result
         temp_rel->tuples[i].key = tmp_data->tuples[payload].key;
         temp_rel->tuples[i].payload = payload;
     }
+
+    debug("%d ",is_sorted(temp_rel));
 
     rel_arr[rel_arr_index] = temp_rel;
 
@@ -129,7 +143,7 @@ static int allocate_relation(relation *rel_arr[], DArray *metadata_arr, uint64_t
 
     for (size_t i = 0 ; i < tmp_data->num_tuples ; i++) {
         temp_rel->tuples[i].key = tmp_data->tuples[i].key;
-        temp_rel->tuples[i].payload = i;
+        temp_rel->tuples[i].payload = tmp_data->tuples[i].payload;
     }
 
     rel_arr[rel_arr_index] = temp_rel;
@@ -169,8 +183,10 @@ static int build_relations(predicate *pred, uint32_t *relations, DArray *metadat
 
         mid_result *mid_res = (mid_result *) DArray_get(mid_results, lhs_index);
         if (mid_res->last_column_sorted == (int32_t) lhs_col) {
+            debug("Only right relation needs sorting (%u , %u)", lhs_rel, rhs_rel);
             return JOIN_SORT_RHS;
         } else {
+            debug("Both relations need sorting (%u , %u)", lhs_rel, rhs_rel);
             mid_res->last_column_sorted = lhs_col;
             return CLASSIC_JOIN;
         }
@@ -230,6 +246,8 @@ static join_result join_relations(relation *relR, relation *relS, int *error) {
     DArray *results_s = DArray_create(sizeof(uint64_t), 10);
     check(results_s != NULL, "Couldn't allocate dynamic array");
 
+    uint32_t results = 0;
+
     while (pr < relR->num_tuples && ps < relS->num_tuples) {
 
         if (mark == -1) {
@@ -254,6 +272,9 @@ static join_result join_relations(relation *relR, relation *relS, int *error) {
         
         } else { //the keys of the relations are different
             pr++;
+            if (pr >= relR->num_tuples) {
+                break;
+            }
             if (relR->tuples[pr].key == relS->tuples[ps - 1].key) {
                 ps = (size_t) mark;
             }
@@ -317,18 +338,32 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
     DArray *payloads_R = join_res.results[0];
     DArray *payloads_S = join_res.results[1];
 
+    debug("relR = %u, colR = %u , relS = %u, colS = %u", relR, colR, relS, colS);
+
     if (join_id == CLASSIC_JOIN) {
         /*If we sorted both relations, add them both to mid results */
         mid_result tmp;
         tmp.last_column_sorted = colR;
         tmp.payloads = payloads_R;
         tmp.relation = relR;
-        DArray_push(mid_results, &tmp);
+        ssize_t index = relation_exists(mid_results, relR);
+        if (index == -1) {
+            DArray_push(mid_results, &tmp);
+        } else {
+            debug("Set instead of push (%u)", DArray_count(tmp.payloads));           
+            DArray_set(mid_results, index, &tmp);
+        }
 
         tmp.last_column_sorted = colS;
         tmp.payloads = payloads_S;
         tmp.relation = relS;
-        DArray_push(mid_results, &tmp);
+        index = relation_exists(mid_results, relS);
+        if (index == -1) {
+            DArray_push(mid_results, &tmp);
+        } else {
+            debug("Set instead of push");
+            DArray_set(mid_results, index, &tmp);
+        }
     }
     else if (join_id == JOIN_SORT_LHS) {
         /*If we sorted only left relation, it means the right one was already in the mid results */
@@ -336,34 +371,46 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         tmp.last_column_sorted = colR;
         tmp.payloads = payloads_R;
         tmp.relation = relR;
-        DArray_push(mid_results, &tmp);
+        ssize_t index = relation_exists(mid_results, relR);
+        if (index == -1) {
+            DArray_push(mid_results, &tmp);
+        } else {
+            DArray_set(mid_results, index, &tmp);
+        }
 
-        ssize_t index = relation_exists(mid_results, relS);
+        index = relation_exists(mid_results, relS);
         if (index == -1) {
             log_err("Something went really wrong");
             exit(EXIT_FAILURE);
         }
         mid_result *update = (mid_result *) DArray_get(mid_results, index);
         update->payloads = payloads_S;
+        debug("updated payload = %u", DArray_count(update->payloads));
     }
     else if (join_id == JOIN_SORT_RHS) {
         mid_result tmp;
         tmp.last_column_sorted = colS;
         tmp.payloads = payloads_S;
         tmp.relation = relS;
-        DArray_push(mid_results, &tmp);
+        ssize_t index = relation_exists(mid_results, relS);
+        if (index == -1) {
+            DArray_push(mid_results, &tmp);
+        } else {
+            debug("Set instead of push");
+            DArray_set(mid_results, index, &tmp);
+        }
 
-        ssize_t index = relation_exists(mid_results, relR);
+        index = relation_exists(mid_results, relR);
         if (index == -1) {
             log_err("Something went really wrong");
             exit(EXIT_FAILURE);
         }
         mid_result *update = (mid_result *) DArray_get(mid_results, index);
         update->payloads = payloads_R;
-
+        debug("updated payload = %u", DArray_count(update->payloads));
     }
     else if (join_id == SCAN_JOIN) {
-            ssize_t index = relation_exists(mid_results, relR);
+        ssize_t index = relation_exists(mid_results, relR);
         if (index == -1) {
             log_err("Something went really wrong");
             exit(EXIT_FAILURE);
@@ -392,6 +439,7 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
 
     if (retval == CLASSIC_JOIN) {
         //Means its a classic join, sort both relations and join them
+        debug("CLASSIC JOIN");
         iterative_sort(rel[0]);
         iterative_sort(rel[1]);
 
@@ -399,16 +447,19 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
     }
     else if (retval == JOIN_SORT_LHS) {
         //Means one of the relations is already sorted, sorted only the left one
+        debug("JOIN_SORT_LHS");
         iterative_sort(rel[0]);
 
         join_res = call_join(rel, &error);
     }
     else if (retval == JOIN_SORT_RHS) {
+        debug("JOIN_SORT_RHS");
         iterative_sort(rel[1]);
 
         join_res = call_join(rel, &error);
     }
     else if (retval == SCAN_JOIN) {
+        debug("SCAN_JOIN");
         join_res = scan_join(rel[0], rel[1], &error);
     }
     else if (retval == DO_NOTHING) {
@@ -418,12 +469,12 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
         return -1;
     }
 
-    if (rel[0]->num_tuples < rel[1]->num_tuples) {
-        update_mid_results(join_res, mid_results, relations[pred->first.relation], pred->first.column, relations[((relation_column *) pred->second)->relation], ((relation_column *) pred->second)->column, retval);
+    if (rel[0]->num_tuples >= rel[1]->num_tuples && retval != SCAN_JOIN) {
+        DArray *tmp = join_res.results[0];
+        join_res.results[0] = join_res.results[1];
+        join_res.results[1] = tmp;  
     }
-    else {
-        update_mid_results(join_res, mid_results, relations[((relation_column *) pred->second)->relation], ((relation_column *) pred->second)->column, relations[pred->first.relation], pred->first.column, retval);
-    }
+    update_mid_results(join_res, mid_results, relations[pred->first.relation], pred->first.column, relations[((relation_column *) pred->second)->relation], ((relation_column *) pred->second)->column, retval);
 
 
     FREE(rel[0]->tuples);
