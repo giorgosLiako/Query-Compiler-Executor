@@ -79,7 +79,7 @@ int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, D
         res.payloads = DArray_create(sizeof(uint64_t), 100);
         DArray_push(mid_results, &res);
         check(exec_filter_rel_no_exists(pred, rel, *number, (mid_result *) DArray_last(mid_results)) != -1, "Execution of filter failed!");
-        debug("Filter executed, results = %d", DArray_count(res.payloads));
+        //debug("Filter executed, results = %d", DArray_count(res.payloads));
     }
 
     return 0;

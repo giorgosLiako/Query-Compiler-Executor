@@ -122,7 +122,7 @@ static int allocate_relation_mid_results(relation *rel_arr[], DArray *mid_result
         temp_rel->tuples[i].payload = payload;
     }
 
-    debug("%d ",is_sorted(temp_rel));
+    //debug("%d ",is_sorted(temp_rel));
 
     rel_arr[rel_arr_index] = temp_rel;
 
@@ -183,10 +183,10 @@ static int build_relations(predicate *pred, uint32_t *relations, DArray *metadat
 
         mid_result *mid_res = (mid_result *) DArray_get(mid_results, lhs_index);
         if (mid_res->last_column_sorted == (int32_t) lhs_col) {
-            debug("Only right relation needs sorting (%lu , %lu)", lhs_rel, rhs_rel);
+            //debug("Only right relation needs sorting (%lu , %lu)", lhs_rel, rhs_rel);
             return JOIN_SORT_RHS;
         } else {
-            debug("Both relations need sorting (%lu , %lu)", lhs_rel, rhs_rel);
+            //debug("Both relations need sorting (%lu , %lu)", lhs_rel, rhs_rel);
             mid_res->last_column_sorted = lhs_col;
             return CLASSIC_JOIN;
         }
@@ -338,7 +338,7 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
     DArray *payloads_R = join_res.results[0];
     DArray *payloads_S = join_res.results[1];
 
-    debug("relR = %u, colR = %u , relS = %u, colS = %u", relR, colR, relS, colS);
+    //debug("relR = %u, colR = %u , relS = %u, colS = %u", relR, colR, relS, colS);
 
     if (join_id == CLASSIC_JOIN) {
         /*If we sorted both relations, add them both to mid results */
@@ -350,7 +350,7 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         if (index == -1) {
             DArray_push(mid_results, &tmp);
         } else {
-            debug("Set instead of push (%u)", DArray_count(tmp.payloads));           
+            //debug("Set instead of push (%u)", DArray_count(tmp.payloads));           
             DArray_set(mid_results, index, &tmp);
         }
 
@@ -361,7 +361,7 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         if (index == -1) {
             DArray_push(mid_results, &tmp);
         } else {
-            debug("Set instead of push");
+            //debug("Set instead of push");
             DArray_set(mid_results, index, &tmp);
         }
     }
@@ -385,7 +385,7 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         }
         mid_result *update = (mid_result *) DArray_get(mid_results, index);
         update->payloads = payloads_S;
-        debug("updated payload = %u", DArray_count(update->payloads));
+        //debug("updated payload = %u", DArray_count(update->payloads));
     }
     else if (join_id == JOIN_SORT_RHS) {
         mid_result tmp;
@@ -396,7 +396,7 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         if (index == -1) {
             DArray_push(mid_results, &tmp);
         } else {
-            debug("Set instead of push");
+            //debug("Set instead of push");
             DArray_set(mid_results, index, &tmp);
         }
 
@@ -407,7 +407,7 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         }
         mid_result *update = (mid_result *) DArray_get(mid_results, index);
         update->payloads = payloads_R;
-        debug("updated payload = %u", DArray_count(update->payloads));
+        //debug("updated payload = %u", DArray_count(update->payloads));
     }
     else if (join_id == SCAN_JOIN) {
         ssize_t index = relation_exists(mid_results, relR);
@@ -439,7 +439,7 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
 
     if (retval == CLASSIC_JOIN) {
         //Means its a classic join, sort both relations and join them
-        debug("CLASSIC JOIN");
+        //debug("CLASSIC JOIN");
         iterative_sort(rel[0]);
         iterative_sort(rel[1]);
 
@@ -447,19 +447,19 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
     }
     else if (retval == JOIN_SORT_LHS) {
         //Means one of the relations is already sorted, sorted only the left one
-        debug("JOIN_SORT_LHS");
+        //debug("JOIN_SORT_LHS");
         iterative_sort(rel[0]);
 
         join_res = call_join(rel, &error);
     }
     else if (retval == JOIN_SORT_RHS) {
-        debug("JOIN_SORT_RHS");
+        //debug("JOIN_SORT_RHS");
         iterative_sort(rel[1]);
 
         join_res = call_join(rel, &error);
     }
     else if (retval == SCAN_JOIN) {
-        debug("SCAN_JOIN");
+        //debug("SCAN_JOIN");
         join_res = scan_join(rel[0], rel[1], &error);
     }
     else if (retval == DO_NOTHING) {
