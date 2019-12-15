@@ -42,7 +42,7 @@ typedef struct query {
 } query;
 
 typedef struct mid_result {
-    uint32_t relation;
+    uint64_t relation;
     int32_t last_column_sorted;
     DArray* payloads;
 } mid_result;
