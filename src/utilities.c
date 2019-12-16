@@ -126,7 +126,6 @@ int read_relations(DArray *metadata_arr) {
     char *linptr = NULL;
     size_t n = 0;
 
-    printf("%s\n", "Insert relations");
     while (getline(&linptr, &n, stdin) != -1) {
         if (!strncmp(linptr, "Done\n", strlen("Done\n")) || !strncmp(linptr,"done\n", strlen("done\n"))) {
             break;
@@ -192,7 +191,7 @@ static void print_sums(DArray *mid_results, uint32_t *relations, DArray *metadat
         } else {
             uint64_t sum = 0;
             relation *tmp_rel = ((metadata *) DArray_get(metadata_arr, rel))->data[col];
-            printf("size->%u \n", DArray_count(res->payloads));
+            //printf("size->%u ", DArray_count(res->payloads));
             for (ssize_t j = 0 ; j < DArray_count(res->payloads) ; j++) {
                 sum += tmp_rel->tuples[*(uint64_t *) DArray_get(res->payloads, j)].key;
             }
@@ -239,9 +238,9 @@ static int execute_query(query* q , DArray* metadata_arr) {
     DArray *mid_results = DArray_create(sizeof(mid_result), 4);
 
     //debug("Executing query : ");
-    print_relations(q->relations, q->relations_size);
-    print_predicates(q->predicates, q->predicates_size);
-    print_select(q->selects, q->select_size);
+    // print_relations(q->relations, q->relations_size);
+    // print_predicates(q->predicates, q->predicates_size);
+    // print_select(q->selects, q->select_size);
     
   
     for (size_t i = 0 ; i < (size_t)q->predicates_size ; i++) {
@@ -269,6 +268,15 @@ static int execute_query(query* q , DArray* metadata_arr) {
     error:
         return -1;
 }
+
+// void check_metadata(DArray * metadata_arr)
+// {
+//     metadata* tmp_data = (metadata*) DArray_get(metadata_arr , 6);
+//     relation*rel = tmp_data->data[1];
+
+//     for(ssize_t i = 0 ; i <(ssize_t) rel->num_tuples ; i++)
+//         printf("%lu %lu\n",rel->tuples[i].payload , rel->tuples[i].key);
+// }
 
 void execute_queries(DArray *q_list, DArray *metadata_arr) {
 

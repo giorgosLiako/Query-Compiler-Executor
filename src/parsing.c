@@ -173,8 +173,7 @@ DArray* parser() {
     char* line_ptr = NULL;
     size_t n = 0;
     int characters;
-    
-    printf("%s\n", "Insert workloads");
+
     while ((characters = getline(&line_ptr, &n, stdin)) != -1) {
         
         if (line_ptr[0] == 'F') {
@@ -191,7 +190,7 @@ DArray* parser() {
         
         parse_select(select,  &new_query);
 
-        rename_relations(&new_query);
+       // rename_relations(&new_query);
         
         DArray_push(queries, &new_query);
 

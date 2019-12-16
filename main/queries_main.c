@@ -16,7 +16,6 @@ int main() {
     DArray *metadata_arr = DArray_create(sizeof(metadata), 10);
 
     check(read_relations(metadata_arr) != -1, "Something went wrong in reading the relations");
-
     while(1){
     DArray *query_list = parser(metadata_arr);
     check(query_list != NULL, "Parsing failed");
@@ -35,6 +34,8 @@ int main() {
     }
     DArray_destroy(query_list);
     query_list = NULL;
+    printf("\n\n");
+    }
     for (size_t i = 0 ; i < DArray_count(metadata_arr); i++){
         metadata *met = (metadata *) DArray_get(metadata_arr, i);
         if (met->data[i] != NULL){
@@ -45,8 +46,9 @@ int main() {
             FREE(met->data);
         }
     }
+    
     DArray_destroy(metadata_arr);
-    }
+
     return EXIT_SUCCESS;
 
      error:
