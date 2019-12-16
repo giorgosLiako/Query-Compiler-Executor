@@ -27,10 +27,14 @@ void swap_arrays(relation *, relation *);
 
 int read_relations(DArray *);
 
-ssize_t relation_exists(DArray *, uint32_t );
-
 DArray* parser();
 
 void execute_queries(DArray * , DArray * );
+
+mid_result* create_entity(DArray *mid_results);
+
+relation_info* add_to_entity(mid_result *res, uint32_t);
+
+relation_info* relation_exists(DArray *, uint32_t );
 
 #endif

@@ -13,10 +13,12 @@
 #include "quicksort.h"
 
 #define CLASSIC_JOIN 1
-#define JOIN_SORT_LHS 2
-#define JOIN_SORT_RHS 3
-#define SCAN_JOIN 4
-#define DO_NOTHING 5
+#define JOIN_SORT_LHS_EXISTS 2
+#define JOIN_SORT_RHS_EXISTS 3
+#define JOIN_SORT_LHS 4
+#define JOIN_SORT_RHS 5
+#define SCAN_JOIN 6
+#define DO_NOTHING 7
 
 typedef struct result {
     DArray *results[2];

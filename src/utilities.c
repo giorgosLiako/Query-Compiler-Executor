@@ -161,18 +161,20 @@ int read_relations(DArray *metadata_arr) {
         return -1;
 }
 
-ssize_t relation_exists(DArray *mid_results, uint32_t relation) {
+relation_info* relation_exists(DArray *mid_results, uint32_t relation) {
 
-    ssize_t found = -1;
     for (ssize_t i = 0 ; i < DArray_count(mid_results) ; i++) {
-        mid_result res = *(mid_result *) DArray_get(mid_results, i);
-        if (res.relation == relation) {
-            found = i;
+        mid_result *res = (mid_result *) DArray_get(mid_results, i);
+        for (ssize_t j = 0 ; j < DArray_count(res->rel_infos) ; j++) {
+            relation_info *rel_info = DArray_get(res->rel_infos, j);
+            if (rel_info->relation == relation) {
+                return rel_info;
+            }
         }
     }
-
-    return found;
+    return NULL;
 }
+   
 
 static void print_sums(DArray *mid_results, uint32_t *relations, DArray *metadata_arr, relation_column *selects, size_t select_size) {
 
@@ -235,7 +237,7 @@ void print_select(relation_column* r_c, size_t size){
 
 static int execute_query(query* q , DArray* metadata_arr) {
 
-    DArray *mid_results = DArray_create(sizeof(mid_result), 4);
+    DArray *mid_results = DArray_create(sizeof(mid_result), 2);
 
     debug("Executing query : ");
     print_relations(q->relations, q->relations_size);
@@ -267,6 +269,26 @@ static int execute_query(query* q , DArray* metadata_arr) {
 
     error:
         return -1;
+}
+
+mid_result* create_entity(DArray *mid_results) {
+    
+    mid_result res;
+    res.rel_infos = DArray_create(sizeof(relation_info), 3);
+
+    DArray_push(mid_results, &res);
+
+    return (mid_result *) DArray_last(mid_results);
+}
+
+relation_info* add_to_entity(mid_result *res, uint32_t relation) {
+
+    relation_info rel_info;
+    rel_info.last_col_sorted = -1;
+    rel_info.relation = relation;
+    DArray_push(res, &rel_info);
+
+    return (relation_info *) DArray_last(res);
 }
 
 void execute_queries(DArray *q_list, DArray *metadata_arr) {
