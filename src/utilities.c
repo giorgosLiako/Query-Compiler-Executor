@@ -126,6 +126,7 @@ int read_relations(DArray *metadata_arr) {
     char *linptr = NULL;
     size_t n = 0;
 
+
     while (getline(&linptr, &n, stdin) != -1) {
         if (!strncmp(linptr, "Done\n", strlen("Done\n")) || !strncmp(linptr,"done\n", strlen("done\n"))) {
             break;
