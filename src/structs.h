@@ -41,71 +41,10 @@ typedef struct query {
     size_t select_size;
 } query;
 
-typedef struct relation_info {
-    uint32_t relation;
-    int32_t last_col_sorted;
-    DArray *payloads;
-} relation_info;
-
 typedef struct mid_result {
-    DArray *rel_infos;
+    uint64_t relation;
+    int32_t last_column_sorted;
+    DArray* payloads;
 } mid_result;
-
-
-results = malloc(sizeof(uint64_t) * DArray_count(rel_infos) + 1);
-
-
-   (rowid0, rowid1)
-   0.1 = 1.0 & 1.0 = 2.0
-
-   (rowid0, rowid1) uint64_t *valuesOf1.0 , relation(2.0)
-
-   =>
-
-   (rowid0, rowid1, rowid2)
-
-////////////////////////////////////////////////////////////////
-
-    0.1 = 1.0 & 2.0 = 1.0
-
-    (rowid0, rowid1) uint64_t *valuesOf1.0, relation(2.0)
-
-    =>
-
-    (rowid0, rowid1, rowid2)
-
-//////////////////////////////////////////////////////////////////
-
-    (rowid0, rowid1)
-    0.1 = 1.0 & 1.1 = 2.0
-
-    (rowid0, rowid1) uint64_t *valuesOf1.1, relation(2.0)
-
-    =>
-
-    (rowid0, rowid1, rowid2);
-
-
-////////////////////////////////////////////////////////////////////
-
-    (rowid0, rowid1)
-    0.1 = 1.0 & 1.2 = 0.2
-
-    relation(1.2), relation(0.2)
-
-    =>
-
-    DArray(1.2), DArray(0.2)
-
-////////////////////////////////////////////////////////////////////
-
-    (rowid0, rowid1)
-    0.1 = 1.0 & 2.2 = 3.2 & 1.4 = 0.2
-
-    new entity => 2rel_info => add => (rowid2, rowid3) => relation(2.2), relation(3.2)
-    
-    =>
-
-    DArray(2.2), DArray(3.2)
 
 #endif

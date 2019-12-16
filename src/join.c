@@ -293,8 +293,70 @@ static join_result call_join(relation *rel[], int *error) {
         return join_relations(rel[1], rel[0], error);
     }
 }
+static join_result remove_duplicates(join_result join_res) {
+    DArray *payloads_R = join_res.results[0];
+    DArray *payloads_S = join_res.results[1];
 
-static int build_relations(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results, relation *rel[]) {
+    DArray *results_r = DArray_create(sizeof(uint64_t), 10);
+    check(results_r != NULL, "Couldnt allocate dynamic array");
+    DArray *results_s = DArray_create(sizeof(uint64_t), 10);
+    check(results_s != NULL, "Couldn't allocate dynamic array");
+
+
+    join_result new_res;
+
+    size_t size = DArray_count(payloads_R);
+    size_t new_size = DArray_count(results_r);
+
+    for (size_t i = 0; i < size; i++) {
+        char found = 0;
+        uint64_t R = *((uint64_t*) DArray_get(payloads_R,i));
+        uint64_t S = *((uint64_t*) DArray_get(payloads_S,i));
+        for (size_t j = 0; j < new_size; j++) {
+            if (R == *((uint64_t*) DArray_get(results_r, j)) &&
+                S == *((uint64_t*) DArray_get(results_s, j)) ){
+                    found = 1;
+                    break;
+                }
+        }
+
+        if (found == 0) {   
+            DArray_push(results_r, &R);
+            DArray_push(results_s, &S);
+            new_size++;
+        }
+    }
+    new_res.results[0] = results_r;
+    new_res.results[1] = results_s;
+
+    error:
+    return new_res;
+
+}
+
+DArray *new(join_result driver, DArray *last, DArray *edit){
+
+    DArray *n = DArray_create(sizeof(uint64_t), 10);
+
+    size_t count = DArray_count(n);
+
+    printf("non duplicate %u\n", DArray_count(driver.results[0]));
+    printf("%u %u\n", DArray_count(last),  DArray_count(edit) );
+    for (size_t i = 0; i < DArray_count(driver.results[0]); i++) {
+        uint64_t id = *((uint64_t*) DArray_get(driver.results[0], i));
+        for (size_t j = 0; j < DArray_count(last); j++) {
+            if (id == *((uint64_t*) DArray_get(last, j))){
+                count++;
+                uint64_t n_id = *((uint64_t*) DArray_get(edit, j));
+                DArray_push(n, &n_id);
+            }
+        }
+    }
+
+    
+
+    return n;
+}
 
     uint64_t lhs_rel = relations[pred->first.relation]; 
     uint64_t lhs_col = pred->first.column; 
@@ -328,13 +390,32 @@ static int build_relations(predicate *pred, uint32_t *relations, DArray *metadat
 
         return SCAN_JOIN;
     }
-    else if (lhs_info != NULL && rhs_info == NULL) {
-        error += allocate_relation(rel, metadata_arr, rhs_rel, rhs_col, 1);
-        if (lhs_info->last_col_sorted == (int32_t) lhs_col) {
-            return JOIN_SORT_RHS;
+    else if (join_id == JOIN_SORT_RHS) {
+        mid_result tmp;
+        tmp.last_column_sorted = colS;
+        tmp.payloads = payloads_S;
+        tmp.relation = relS;
+        
+        ssize_t index = relation_exists(mid_results, relS);
+        if (index == -1) {
+            DArray_push(mid_results, &tmp);
         } else {
             return JOIN_SORT_LHS_EXISTS;
         }
+        join_result no_dup = remove_duplicates(join_res);
+        mid_result *update = (mid_result *) DArray_get(mid_results, index);
+        mid_result *last = (mid_result*) DArray_get(mid_results, index);
+        size_t count = 0;
+        for (size_t i = 0; i < DArray_count(mid_results); i++) {
+            mid_result *edit = (mid_result *) DArray_get(mid_results, i);
+            if (edit->relation != relR && edit->relation != relS){
+                edit->payloads = new(no_dup, last->payloads, edit->payloads);         
+            }
+        }
+        update->payloads = payloads_R;
+        debug("updated payload = %u", DArray_count(update->payloads));
+
+
     }
     else if (lhs_info == NULL && rhs_info != NULL) {
         error += allocate_relation(rel, metadata_arr, lhs_rel, lhs_col, 0);
@@ -428,7 +509,3 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
 
     return error;
 }
-
-    rowid0 - 1, 6, 2, 2
-    rowid1 - 0, 1, 3, 5
-    rowid2 - 1, 5, 1, 5

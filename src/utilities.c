@@ -194,6 +194,7 @@ static void print_sums(DArray *mid_results, uint32_t *relations, DArray *metadat
         } else {
             uint64_t sum = 0;
             relation *tmp_rel = ((metadata *) DArray_get(metadata_arr, rel))->data[col];
+            printf("size->%u \n", DArray_count(res->payloads));
             for (ssize_t j = 0 ; j < DArray_count(res->payloads) ; j++) {
                 sum += tmp_rel->tuples[*(uint64_t *) DArray_get(res->payloads, j)].key;
             }
