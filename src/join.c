@@ -241,9 +241,9 @@ static join_result join_relations(relation *relR, relation *relS, int *error) {
     size_t ps = 0; 
     join_result res;
 
-    DArray *results_r = DArray_create(sizeof(uint64_t), 10);
+    DArray *results_r = DArray_create(sizeof(uint64_t), 100);
     check(results_r != NULL, "Couldnt allocate dynamic array");
-    DArray *results_s = DArray_create(sizeof(uint64_t), 10);
+    DArray *results_s = DArray_create(sizeof(uint64_t), 100);
     check(results_s != NULL, "Couldn't allocate dynamic array");
 
     uint32_t results = 0;
@@ -298,9 +298,9 @@ static join_result scan_join(relation *relR, relation *relS, int *error) {
     ssize_t pr = 0, ps = 0;
     join_result res;
 
-    DArray *results_r = DArray_create(sizeof(uint64_t), 10);
+    DArray *results_r = DArray_create(sizeof(uint64_t), 100);
     check(results_r != NULL, "Couldnt allocate dynamic array");
-    DArray *results_s = DArray_create(sizeof(uint64_t), 10);
+    DArray *results_s = DArray_create(sizeof(uint64_t), 100);
     check(results_s != NULL, "Couldn't allocate dynamic array");
 
     uint64_t iterations = relR->num_tuples < relS->num_tuples ? relR->num_tuples : relS->num_tuples;
@@ -335,9 +335,9 @@ static join_result remove_duplicates(join_result join_res) {
     DArray *payloads_R = join_res.results[0];
     DArray *payloads_S = join_res.results[1];
 
-    DArray *results_r = DArray_create(sizeof(uint64_t), 10);
+    DArray *results_r = DArray_create(sizeof(uint64_t), 100);
     check(results_r != NULL, "Couldnt allocate dynamic array");
-    DArray *results_s = DArray_create(sizeof(uint64_t), 10);
+    DArray *results_s = DArray_create(sizeof(uint64_t), 100);
     check(results_s != NULL, "Couldn't allocate dynamic array");
 
 
@@ -374,7 +374,7 @@ static join_result remove_duplicates(join_result join_res) {
 
 DArray *new(join_result driver, DArray *last, DArray *edit, uint32_t mode){
 
-    DArray *n = DArray_create(sizeof(uint64_t), 10);
+    DArray *n = DArray_create(sizeof(uint64_t), 100);
 
     size_t count = DArray_count(n);
     size_t index = 0;
@@ -486,6 +486,7 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
 
         index = relation_exists(mid_results, relR);
         if (index == -1) {
+<<<<<<< HEAD
             DArray_push(mid_results, &tmp_R);
         } else {
             join_result no_dup = remove_duplicates(join_res);
@@ -496,6 +497,19 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
                 if (edit->relation != relR && edit->relation != relS){
                     edit->payloads = new(no_dup, update->payloads, edit->payloads, mode);         
                 }
+=======
+            log_err("Something went really wrong");
+            exit(EXIT_FAILURE);
+        }
+        join_result no_dup = remove_duplicates(join_res);
+        mid_result *update = (mid_result *) DArray_get(mid_results, index);
+
+        size_t count = 0;
+        for (size_t i = 0; i < DArray_count(mid_results); i++) {
+            mid_result *edit = (mid_result *) DArray_get(mid_results, i);
+            if (edit->relation != relR && edit->relation != relS){
+                edit->payloads = new(no_dup, update->payloads, edit->payloads);         
+>>>>>>> 695af61d9d53ad6220aaad05e17b1b59d1aa39b1
             }
             DArray_set(mid_results, index, &tmp_R);
         }
