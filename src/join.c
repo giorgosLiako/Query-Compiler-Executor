@@ -391,8 +391,6 @@ DArray *new(join_result driver, DArray *last, DArray *edit){
         }
     }
 
-    
-
     return n;
 }
 
