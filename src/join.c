@@ -95,7 +95,7 @@ static int iterative_sort(relation *rel) {
 
 bool is_sorted(relation *rel) {
 
-    for (ssize_t i = 0 ; i < rel->num_tuples - 1; i++) {
+    for (size_t i = 0 ; i < rel->num_tuples - 1; i++) {
         if (rel->tuples[i + 1].key < rel->tuples[i].key) {
             return false;
         }
@@ -236,6 +236,16 @@ static int build_relations(predicate *pred, uint32_t *relations, DArray *metadat
 
 static join_result join_relations(relation *relR, relation *relS, int *error) {
 
+    int inverted = 0;
+
+    if (relR->num_tuples > relS->num_tuples) {
+        relation *tmp = relR;
+        relR = relS;
+        relS = tmp;
+        inverted = 1;
+        debug("inverted!");
+    } 
+
     int mark = -1;  //mark for duplicates
     size_t pr = 0; 
     size_t ps = 0; 
@@ -246,7 +256,6 @@ static join_result join_relations(relation *relR, relation *relS, int *error) {
     DArray *results_s = DArray_create(sizeof(uint64_t), 100);
     check(results_s != NULL, "Couldn't allocate dynamic array");
 
-    uint32_t results = 0;
 
     while (pr < relR->num_tuples && ps < relS->num_tuples) {
 
@@ -282,8 +291,10 @@ static join_result join_relations(relation *relR, relation *relS, int *error) {
         }
     }
 
-    res.results[0] = results_r;
-    res.results[1] = results_s;
+    res.results[inverted] = results_r;
+    res.results[1 - inverted] = results_s;
+
+
 
     *error = 0;
     return res;
@@ -323,15 +334,7 @@ static join_result scan_join(relation *relR, relation *relS, int *error) {
         return res;
 }
 
-static join_result call_join(relation *rel[], int *error) {
-
-    if (rel[0]->num_tuples < rel[1]->num_tuples) {
-        return join_relations(rel[0], rel[1], error);
-    } else {
-        return join_relations(rel[1], rel[0], error);
-    }
-}
-static join_result remove_duplicates(join_result join_res) {
+static DArray *remove_duplicates(join_result join_res, int mode) {
     DArray *payloads_R = join_res.results[0];
     DArray *payloads_S = join_res.results[1];
 
@@ -340,8 +343,6 @@ static join_result remove_duplicates(join_result join_res) {
     DArray *results_s = DArray_create(sizeof(uint64_t), 100);
     check(results_s != NULL, "Couldn't allocate dynamic array");
 
-
-    join_result new_res;
 
     size_t size = DArray_count(payloads_R);
     size_t new_size = DArray_count(results_r);
@@ -364,28 +365,22 @@ static join_result remove_duplicates(join_result join_res) {
             new_size++;
         }
     }
-    new_res.results[0] = results_r;
-    new_res.results[1] = results_s;
 
     error:
-    return new_res;
+    if (mode == 0) return results_r;
+    else return results_s;
 
 }
 
-DArray *new(join_result driver, DArray *last, DArray *edit, uint32_t mode){
+DArray *new(DArray *driver, DArray *last, DArray *edit){
 
     DArray *n = DArray_create(sizeof(uint64_t), 100);
 
     size_t count = DArray_count(n);
-    size_t index = 0;
-    // if (mode == 1) index = 0;
-    // else index = 1;
+    
 
-    printf("non duplicate %u\n", DArray_count(driver.results[index]));
-    printf("%u %u\n", DArray_count(last),  DArray_count(edit) );
-
-    for (size_t i = 0; i < DArray_count(driver.results[index]); i++) {
-        uint64_t id = *((uint64_t*) DArray_get(driver.results[index], i));
+    for (size_t i = 0; i < DArray_count(driver); i++) {
+        uint64_t id = *((uint64_t*) DArray_get(driver, i));
         for (size_t j = 0; j < DArray_count(last); j++) {
             if (id == *((uint64_t*) DArray_get(last, j))){
                 count++;
@@ -400,12 +395,12 @@ DArray *new(join_result driver, DArray *last, DArray *edit, uint32_t mode){
     return n;
 }
 
-static void update_mid_results(join_result join_res, DArray *mid_results, uint32_t relR, uint32_t colR, uint32_t relS, uint32_t colS, int join_id, uint32_t mode) {
-
+static void update_mid_results(join_result join_res, DArray *mid_results, uint32_t relR, uint32_t colR, uint32_t relS, uint32_t colS, int join_id) {
+    
     DArray *payloads_R = join_res.results[0];
     DArray *payloads_S = join_res.results[1];
 
-    //debug("relR = %u, colR = %u , relS = %u, colS = %u", relR, colR, relS, colS);
+    debug("relR = %u, colR = %u , relS = %u, colS = %u", relR, colR, relS, colS);
 
     if (join_id == CLASSIC_JOIN) {
         /*If we sorted both relations, add them both to mid results */
@@ -462,20 +457,11 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         tmp_S.payloads = payloads_S;
         tmp_S.relation = relS;
         
-        size_t index = relation_exists(mid_results, relS);
+        ssize_t index = relation_exists(mid_results, relS);
         if (index == -1) {
             DArray_push(mid_results, &tmp_S);
         } else {
-            //debug("Set instead of push");index = relation_exists(mid_results, relR);
-            join_result no_dup = remove_duplicates(join_res);
-            mid_result *update = (mid_result *) DArray_get(mid_results, index);
-            
-            for (size_t i = 0; i < DArray_count(mid_results); i++) {
-                mid_result *edit = (mid_result *) DArray_get(mid_results, i);
-                if (edit->relation != relR && edit->relation != relS){
-                    edit->payloads = new(no_dup, update->payloads, edit->payloads, mode);         
-                }
-            }
+            debug("Set instead of push S");
             DArray_set(mid_results, index, &tmp_S);
         }
 
@@ -488,13 +474,14 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         if (index == -1) {
             DArray_push(mid_results, &tmp_R);
         } else {
-            join_result no_dup = remove_duplicates(join_res);
+            debug("Set instead of push R");
+            DArray *no_dup = remove_duplicates(join_res, 0);
             mid_result *update = (mid_result *) DArray_get(mid_results, index);
             
             for (size_t i = 0; i < DArray_count(mid_results); i++) {
                 mid_result *edit = (mid_result *) DArray_get(mid_results, i);
                 if (edit->relation != relR && edit->relation != relS){
-                    edit->payloads = new(no_dup, update->payloads, edit->payloads, mode);         
+                    edit->payloads = new(no_dup, update->payloads, edit->payloads);         
                 }
             }
             DArray_set(mid_results, index, &tmp_R);
@@ -536,20 +523,23 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
         iterative_sort(rel[0]);
         iterative_sort(rel[1]);
 
-        join_res = call_join(rel, &error);
+        join_res = join_relations(rel[0], rel[1], &error);
     }
     else if (retval == JOIN_SORT_LHS) {
         //Means one of the relations is already sorted, sorted only the left one
         debug("JOIN_SORT_LHS");
         iterative_sort(rel[0]);
 
-        join_res = call_join(rel, &error);
+        join_res = join_relations(rel[0], rel[1], &error);
     }
     else if (retval == JOIN_SORT_RHS) {
         debug("JOIN_SORT_RHS");
+        debug("size -> %u %u", (rel[0]->num_tuples), (rel[1]->num_tuples));
         iterative_sort(rel[1]);
+        debug("size after sort -> %u is sorted -> %d", rel[1]->num_tuples, is_sorted(rel[1]));
 
-        join_res = call_join(rel, &error);
+        join_res = join_relations(rel[0], rel[1], &error);
+        debug("res size %d", DArray_count(join_res.results[0]));
     }
     else if (retval == SCAN_JOIN) {
         debug("SCAN_JOIN");
@@ -562,15 +552,7 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
         return -1;
     }
 
-    uint32_t mode = 1;
-
-    if (rel[0]->num_tuples >= rel[1]->num_tuples && retval != SCAN_JOIN) {
-        DArray *tmp = join_res.results[0];
-        join_res.results[0] = join_res.results[1];
-        join_res.results[1] = tmp;  
-        mode = 0;
-    }
-    update_mid_results(join_res, mid_results, relations[pred->first.relation], pred->first.column, relations[((relation_column *) pred->second)->relation], ((relation_column *) pred->second)->column, retval, mode);
+    update_mid_results(join_res, mid_results, relations[pred->first.relation], pred->first.column, relations[((relation_column *) pred->second)->relation], ((relation_column *) pred->second)->column, retval);
 
 
     FREE(rel[0]->tuples);
