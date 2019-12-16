@@ -331,7 +331,70 @@ static join_result call_join(relation *rel[], int *error) {
         return join_relations(rel[1], rel[0], error);
     }
 }
+static join_result remove_duplicates(join_result join_res) {
+    DArray *payloads_R = join_res.results[0];
+    DArray *payloads_S = join_res.results[1];
 
+    DArray *results_r = DArray_create(sizeof(uint64_t), 10);
+    check(results_r != NULL, "Couldnt allocate dynamic array");
+    DArray *results_s = DArray_create(sizeof(uint64_t), 10);
+    check(results_s != NULL, "Couldn't allocate dynamic array");
+
+
+    join_result new_res;
+
+    size_t size = DArray_count(payloads_R);
+    size_t new_size = DArray_count(results_r);
+
+    for (size_t i = 0; i < size; i++) {
+        char found = 0;
+        uint64_t R = *((uint64_t*) DArray_get(payloads_R,i));
+        uint64_t S = *((uint64_t*) DArray_get(payloads_S,i));
+        for (size_t j = 0; j < new_size; j++) {
+            if (R == *((uint64_t*) DArray_get(results_r, j)) &&
+                S == *((uint64_t*) DArray_get(results_s, j)) ){
+                    found = 1;
+                    break;
+                }
+        }
+
+        if (found == 0) {   
+            DArray_push(results_r, &R);
+            DArray_push(results_s, &S);
+            new_size++;
+        }
+    }
+    new_res.results[0] = results_r;
+    new_res.results[1] = results_s;
+
+    error:
+    return new_res;
+
+}
+
+DArray *new(join_result driver, DArray *last, DArray *edit){
+
+    DArray *n = DArray_create(sizeof(uint64_t), 10);
+
+    size_t count = DArray_count(n);
+
+    printf("non duplicate %u\n", DArray_count(driver.results[0]));
+    printf("%u %u\n", DArray_count(last),  DArray_count(edit) );
+    for (size_t i = 0; i < DArray_count(driver.results[0]); i++) {
+        uint64_t id = *((uint64_t*) DArray_get(driver.results[0], i));
+        for (size_t j = 0; j < DArray_count(last); j++) {
+            if (id == *((uint64_t*) DArray_get(last, j))){
+                count++;
+                uint64_t n_id = *((uint64_t*) DArray_get(edit, j));
+                DArray_push(n, &n_id);
+            }
+        }
+    }
+
+    
+
+    return n;
+}
 
 static void update_mid_results(join_result join_res, DArray *mid_results, uint32_t relR, uint32_t colR, uint32_t relS, uint32_t colS, int join_id) {
 
@@ -392,6 +455,7 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         tmp.last_column_sorted = colS;
         tmp.payloads = payloads_S;
         tmp.relation = relS;
+        
         ssize_t index = relation_exists(mid_results, relS);
         if (index == -1) {
             DArray_push(mid_results, &tmp);
@@ -405,9 +469,20 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
             log_err("Something went really wrong");
             exit(EXIT_FAILURE);
         }
+        join_result no_dup = remove_duplicates(join_res);
         mid_result *update = (mid_result *) DArray_get(mid_results, index);
+        mid_result *last = (mid_result*) DArray_get(mid_results, index);
+        size_t count = 0;
+        for (size_t i = 0; i < DArray_count(mid_results); i++) {
+            mid_result *edit = (mid_result *) DArray_get(mid_results, i);
+            if (edit->relation != relR && edit->relation != relS){
+                edit->payloads = new(no_dup, last->payloads, edit->payloads);         
+            }
+        }
         update->payloads = payloads_R;
-        //debug("updated payload = %u", DArray_count(update->payloads));
+        debug("updated payload = %u", DArray_count(update->payloads));
+
+
     }
     else if (join_id == SCAN_JOIN) {
         ssize_t index = relation_exists(mid_results, relR);
@@ -439,7 +514,7 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
 
     if (retval == CLASSIC_JOIN) {
         //Means its a classic join, sort both relations and join them
-        //debug("CLASSIC JOIN");
+        debug("CLASSIC JOIN");
         iterative_sort(rel[0]);
         iterative_sort(rel[1]);
 
@@ -447,19 +522,19 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
     }
     else if (retval == JOIN_SORT_LHS) {
         //Means one of the relations is already sorted, sorted only the left one
-        //debug("JOIN_SORT_LHS");
+        debug("JOIN_SORT_LHS");
         iterative_sort(rel[0]);
 
         join_res = call_join(rel, &error);
     }
     else if (retval == JOIN_SORT_RHS) {
-        //debug("JOIN_SORT_RHS");
+        debug("JOIN_SORT_RHS");
         iterative_sort(rel[1]);
 
         join_res = call_join(rel, &error);
     }
     else if (retval == SCAN_JOIN) {
-        //debug("SCAN_JOIN");
+        debug("SCAN_JOIN");
         join_res = scan_join(rel[0], rel[1], &error);
     }
     else if (retval == DO_NOTHING) {

@@ -173,7 +173,7 @@ void arrange_predicates(query *qry) {
 
     //ssize_t index = group_filters(qry);
 
-     index = group_identical(qry, index);
+    index = group_identical(qry, index);
 
     attach_to_filter(qry);
 
