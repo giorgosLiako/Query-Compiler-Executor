@@ -281,12 +281,13 @@ static join_result join_relations(relation *relR, relation *relS, int *error) {
         
         } else { //the keys of the relations are different
             pr++;
-            if (pr >= relR->num_tuples) {
-                break;
-            }
-            if (relR->tuples[pr].key == relS->tuples[ps - 1].key) {
-                ps = (size_t) mark;
-            }
+            ps = mark;
+            // if (pr >= relR->num_tuples) {
+            //     break;
+            // }
+            // if (relR->tuples[pr].key == relS->tuples[ps - 1].key) {
+            //     ps = (size_t) mark;
+            // }
             mark = -1; //initialize mark
         }
     }
@@ -524,6 +525,7 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
         iterative_sort(rel[1]);
 
         join_res = join_relations(rel[0], rel[1], &error);
+        debug("res size %d", DArray_count(join_res.results[0]));
     }
     else if (retval == JOIN_SORT_LHS) {
         //Means one of the relations is already sorted, sorted only the left one
@@ -531,6 +533,7 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
         iterative_sort(rel[0]);
 
         join_res = join_relations(rel[0], rel[1], &error);
+        debug("res size %d", DArray_count(join_res.results[0]));
     }
     else if (retval == JOIN_SORT_RHS) {
         debug("JOIN_SORT_RHS");
