@@ -238,7 +238,7 @@ static int execute_query(query* q , DArray* metadata_arr) {
 
     DArray *mid_results = DArray_create(sizeof(mid_result), 4);
 
-    debug("Executing query : ");
+    //debug("Executing query : ");
     print_relations(q->relations, q->relations_size);
     print_predicates(q->predicates, q->predicates_size);
     print_select(q->selects, q->select_size);
@@ -249,7 +249,7 @@ static int execute_query(query* q , DArray* metadata_arr) {
         if( q->predicates[i].type == 1) { //filter predicate
             check(execute_filter(&q->predicates[i], q->relations, metadata_arr, mid_results) != -1, "");
         } else {    //join predicate
-           check(execute_join(&q->predicates[i], q->relations, metadata_arr, mid_results) != -1, "Join failed!");
+            check(execute_join(&q->predicates[i], q->relations, metadata_arr, mid_results) != -1, "Join failed!");
         }
     }
 
