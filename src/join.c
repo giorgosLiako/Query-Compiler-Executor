@@ -378,7 +378,7 @@ DArray *new(join_result driver, DArray *last, DArray *edit, uint32_t mode){
 
     size_t count = DArray_count(n);
     size_t index = 0;
-    // if (mode == 1) index = 0;
+    //if (mode == 1) index = 0;
     // else index = 1;
 
     printf("non duplicate %u\n", DArray_count(driver.results[index]));
@@ -454,7 +454,6 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
     }
     else if (join_id == JOIN_SORT_RHS) {
         
-    
         mid_result tmp_S;
         tmp_S.last_column_sorted = colS;
         tmp_S.payloads = payloads_S;
