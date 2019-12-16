@@ -486,7 +486,6 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
 
         index = relation_exists(mid_results, relR);
         if (index == -1) {
-<<<<<<< HEAD
             DArray_push(mid_results, &tmp_R);
         } else {
             join_result no_dup = remove_duplicates(join_res);
@@ -497,19 +496,6 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
                 if (edit->relation != relR && edit->relation != relS){
                     edit->payloads = new(no_dup, update->payloads, edit->payloads, mode);         
                 }
-=======
-            log_err("Something went really wrong");
-            exit(EXIT_FAILURE);
-        }
-        join_result no_dup = remove_duplicates(join_res);
-        mid_result *update = (mid_result *) DArray_get(mid_results, index);
-
-        size_t count = 0;
-        for (size_t i = 0; i < DArray_count(mid_results); i++) {
-            mid_result *edit = (mid_result *) DArray_get(mid_results, i);
-            if (edit->relation != relR && edit->relation != relS){
-                edit->payloads = new(no_dup, update->payloads, edit->payloads);         
->>>>>>> 695af61d9d53ad6220aaad05e17b1b59d1aa39b1
             }
             DArray_set(mid_results, index, &tmp_R);
         }
