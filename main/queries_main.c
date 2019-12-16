@@ -34,7 +34,7 @@ int main() {
     }
     DArray_destroy(query_list);
     query_list = NULL;
-    printf("\n\n");
+
 
     for (size_t i = 0 ; i < DArray_count(metadata_arr); i++){
         metadata *met = (metadata *) DArray_get(metadata_arr, i);

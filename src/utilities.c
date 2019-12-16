@@ -161,12 +161,12 @@ int read_relations(DArray *metadata_arr) {
         return -1;
 }
 
-ssize_t relation_exists(DArray *mid_results, uint32_t relation) {
+ssize_t relation_exists(DArray *mid_results, uint64_t relation, uint64_t predicate_id) {
 
     ssize_t found = -1;
     for (ssize_t i = 0 ; i < DArray_count(mid_results) ; i++) {
         mid_result res = *(mid_result *) DArray_get(mid_results, i);
-        if (res.relation == relation) {
+        if ((res.relation == relation) && (res.predicate_id == predicate_id) ) {
             found = i;
         }
     }
@@ -180,7 +180,7 @@ static void print_sums(DArray *mid_results, uint32_t *relations, DArray *metadat
         uint32_t rel = relations[selects[i].relation];
         uint32_t col = selects[i].column;
 
-        ssize_t index = relation_exists(mid_results, rel);
+        ssize_t index = relation_exists(mid_results, rel , selects[i].relation);
         if (index == -1) {
             log_err("Something went really wrong...");
             exit(EXIT_FAILURE);
@@ -238,10 +238,10 @@ static int execute_query(query* q , DArray* metadata_arr) {
 
     DArray *mid_results = DArray_create(sizeof(mid_result), 4);
 
-    //debug("Executing query : ");
-    // print_relations(q->relations, q->relations_size);
-    // print_predicates(q->predicates, q->predicates_size);
-    // print_select(q->selects, q->select_size);
+    debug("Executing query : ");
+    print_relations(q->relations, q->relations_size);
+    print_predicates(q->predicates, q->predicates_size);
+    print_select(q->selects, q->select_size);
     
   
     for (size_t i = 0 ; i < (size_t)q->predicates_size ; i++) {

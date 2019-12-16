@@ -27,7 +27,7 @@ void swap_arrays(relation *, relation *);
 
 int read_relations(DArray *);
 
-ssize_t relation_exists(DArray *, uint32_t );
+ssize_t relation_exists(DArray *, uint64_t , uint64_t);
 
 DArray* parser();
 

@@ -70,11 +70,12 @@ int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, D
     uint64_t *number = (uint64_t*) pred->second; 
 
     ssize_t index;
-    if ((index = relation_exists(mid_results, relations[pred->first.relation])) != -1)  {   
+    if ((index = relation_exists(mid_results, relations[pred->first.relation],pred->first.relation)) != -1)  {   
         check(exec_filter_rel_exists(pred, rel, *number, (mid_result *) DArray_get(mid_results, index)) != -1, "Execution of filter failed!");
     } else {
         mid_result res;
         res.relation = relations[pred->first.relation];
+        res.predicate_id = pred->first.relation;
         res.last_column_sorted = -1;
         res.payloads = DArray_create(sizeof(uint64_t), 100);
         DArray_push(mid_results, &res);

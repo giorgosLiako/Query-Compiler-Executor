@@ -168,8 +168,8 @@ static int build_relations(predicate *pred, uint32_t *relations, DArray *metadat
         return DO_NOTHING;
     }
 
-    ssize_t lhs_index = relation_exists(mid_results, lhs_rel);
-    ssize_t rhs_index = relation_exists(mid_results, rhs_rel);
+    ssize_t lhs_index = relation_exists(mid_results, lhs_rel , pred->first.relation);
+    ssize_t rhs_index = relation_exists(mid_results, rhs_rel , second->relation);
     
     /*Check if relations exist in the mid results and if they are sorted
     and create them accordingly*/
@@ -397,7 +397,7 @@ DArray *new(DArray *driver, DArray *last, DArray *edit){
     return n;
 }
 
-static void update_mid_results(join_result join_res, DArray *mid_results, uint32_t relR, uint32_t colR, uint32_t relS, uint32_t colS, int join_id) {
+static void update_mid_results(join_result join_res, DArray *mid_results, uint64_t relR , uint64_t predR_id , uint64_t colR, uint64_t relS , uint64_t predS_id, uint64_t colS, int join_id) {
     
     DArray *payloads_R = join_res.results[0];
     DArray *payloads_S = join_res.results[1];
@@ -410,7 +410,8 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         tmp.last_column_sorted = colR;
         tmp.payloads = payloads_R;
         tmp.relation = relR;
-        ssize_t index = relation_exists(mid_results, relR);
+        tmp.predicate_id = predR_id;
+        ssize_t index = relation_exists(mid_results, relR , predR_id);
         if (index == -1) {
             DArray_push(mid_results, &tmp);
         } else {         
@@ -420,7 +421,8 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         tmp.last_column_sorted = colS;
         tmp.payloads = payloads_S;
         tmp.relation = relS;
-        index = relation_exists(mid_results, relS);
+        tmp.predicate_id = predS_id;
+        index = relation_exists(mid_results, relS, predS_id);
         if (index == -1) {
             DArray_push(mid_results, &tmp);
         } else {
@@ -433,14 +435,15 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         tmp.last_column_sorted = colR;
         tmp.payloads = payloads_R;
         tmp.relation = relR;
-        ssize_t index = relation_exists(mid_results, relR);
+        tmp.predicate_id = predR_id;
+        ssize_t index = relation_exists(mid_results, relR , predR_id);
         if (index == -1) {
             DArray_push(mid_results, &tmp);
         } else {
             DArray_set(mid_results, index, &tmp);
         }
 
-        index = relation_exists(mid_results, relS);
+        index = relation_exists(mid_results, relS , predS_id);
         if (index == -1) {
             log_err("Something went really wrong");
             exit(EXIT_FAILURE);
@@ -455,8 +458,8 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         tmp_S.last_column_sorted = colS;
         tmp_S.payloads = payloads_S;
         tmp_S.relation = relS;
-        
-        ssize_t index = relation_exists(mid_results, relS);
+        tmp_S.predicate_id = predS_id;
+        ssize_t index = relation_exists(mid_results, relS , predS_id);
         if (index == -1) {
             DArray_push(mid_results, &tmp_S);
         } else {
@@ -467,8 +470,9 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         tmp_R.last_column_sorted = colR;
         tmp_R.payloads = payloads_R;
         tmp_R.relation = relR;
+        tmp_R.predicate_id = predR_id;
 
-        index = relation_exists(mid_results, relR);
+        index = relation_exists(mid_results, relR , predR_id);
         if (index == -1) {
             DArray_push(mid_results, &tmp_R);
         } else {
@@ -489,7 +493,7 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
 
     }
     else if (join_id == SCAN_JOIN) {
-        ssize_t index = relation_exists(mid_results, relR);
+        ssize_t index = relation_exists(mid_results, relR, predR_id);
         if (index == -1) {
             log_err("Something went really wrong");
             exit(EXIT_FAILURE);
@@ -497,7 +501,7 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint32
         mid_result *update = (mid_result *) DArray_get(mid_results, index);
         update->payloads = payloads_R;
 
-        index = relation_exists(mid_results, relS);
+        index = relation_exists(mid_results, relS , predS_id);
         if (index == -1) {
             log_err("Something went really wrong");
             exit(EXIT_FAILURE);
@@ -519,6 +523,7 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
 
     if (retval == CLASSIC_JOIN) {
         //Means its a classic join, sort both relations and join them
+        debug("CLASSIC JOIN");
         iterative_sort(rel[0]);
         iterative_sort(rel[1]);
 
@@ -526,17 +531,20 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
     }
     else if (retval == JOIN_SORT_LHS) {
         //Means one of the relations is already sorted, sorted only the left one
+        debug("JOIN_SORT_LHS");
         iterative_sort(rel[0]);
 
         join_res = join_relations(rel[0], rel[1], &error);
     }
     else if (retval == JOIN_SORT_RHS) {
+        debug("JOIN_SORT_RHS");
         iterative_sort(rel[1]);
 
         join_res = join_relations(rel[0], rel[1], &error);
 
     }
     else if (retval == SCAN_JOIN) {
+        debug("SCAN_JOIN");
         join_res = scan_join(rel[0], rel[1], &error);
     }
     else if (retval == DO_NOTHING) {
@@ -546,7 +554,7 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
         return -1;
     }
 
-    update_mid_results(join_res, mid_results, relations[pred->first.relation], pred->first.column, relations[((relation_column *) pred->second)->relation], ((relation_column *) pred->second)->column, retval);
+    update_mid_results(join_res, mid_results, relations[pred->first.relation],pred->first.relation, pred->first.column, relations[((relation_column *) pred->second)->relation],((relation_column *) pred->second)->relation , ((relation_column *) pred->second)->column, retval);
 
     FREE(rel[0]->tuples);
     FREE(rel[0]);
