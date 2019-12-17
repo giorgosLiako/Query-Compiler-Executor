@@ -389,6 +389,7 @@ DArray *new(DArray *driver, DArray *last, DArray *edit){
         for (size_t j = 0; j < DArray_count(last); j++) {
             if (id == *((uint64_t*) DArray_get(last, j))){
                 count++;
+
                 uint64_t n_id = *((uint64_t*) DArray_get(edit, j));
                 DArray_push(n, &n_id);   
             }
@@ -406,11 +407,11 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint64
 
     if (join_id == CLASSIC_JOIN) {
         /*If we sorted both relations, add them both to mid results */
-        mid_result tmp;
-        tmp.last_column_sorted = colR;
-        tmp.payloads = payloads_R;
-        tmp.relation = relR;
-        tmp.predicate_id = predR_id;
+        mid_result tmp_R;
+        tmp_R.last_column_sorted = colR;
+        tmp_R.payloads = payloads_R;
+        tmp_R.relation = relR;
+        tmp_R.predicate_id = predR_id;
         ssize_t index = relation_exists(mid_results, relR , predR_id);
         if (index == -1) {
             DArray_push(mid_results, &tmp);
@@ -420,13 +421,14 @@ static void update_mid_results(join_result join_res, DArray *mid_results, uint64
             DArray_set(mid_results, index, &tmp);
         }
 
-        tmp.last_column_sorted = colS;
-        tmp.payloads = payloads_S;
-        tmp.relation = relS;
-        tmp.predicate_id = predS_id;
+        mid_result tmp_S;
+        tmp_S.last_column_sorted = colS;
+        tmp_S.payloads = payloads_S;
+        tmp_S.relation = relS;
+        tmp_S.predicate_id = predS_id;
         index = relation_exists(mid_results, relS, predS_id);
         if (index == -1) {
-            DArray_push(mid_results, &tmp);
+            DArray_push(mid_results, &tmp_S);
         } else {
             mid_result *destroy = (mid_result *) DArray_get(mid_results, index);
             DArray_destroy(destroy->payloads);
