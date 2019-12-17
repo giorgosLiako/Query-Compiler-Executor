@@ -115,58 +115,6 @@ static void parse_select(char* string, query *q) {
     q->select_size = spaces + 1;
 }
 
-static void rename_relations(query *qry) {
-
-    int32_t *removed = MALLOC(int32_t, qry->relations_size);
-    
-    for (size_t i = 0 ; i < qry->relations_size ; i++) {
-        removed[i] = -1;
-    }
-
-    for (size_t i = 0 ; i < qry->relations_size ; i++) {
-        for (size_t j = 0 ; j < qry->relations_size ; j++) {
-            if (i != j && qry->relations[i] == qry->relations[j] && removed[i] == -1) {
-                for (size_t z = 0 ; z < qry->predicates_size ; z++) {
-                    if (qry->predicates[z].type == 1 && qry->predicates[z].first.relation == j) {
-                        qry->predicates[z].first.relation = i;
-                        removed[j] = j;
-                    } 
-                    else if (qry->predicates[z].type == 0) {
-                        relation_column *second = (relation_column *) qry->predicates[z].second;
-                        if (qry->predicates[z].first.relation == j) {
-                            qry->predicates[z].first.relation = i;
-                            removed[j] = j;
-                        }
-                        if (second->relation == j) {
-                            second->relation = i;
-                            removed[j] = j;
-                        }
-                    }
-                }
-                for (size_t z = 0 ; z < qry->select_size ; z++) {
-                    if (qry->selects[z].relation == j) {
-                        qry->selects[z].relation = i;
-                    }
-                }
-            }
-        }
-    }
-
-    size_t rel_size = qry->relations_size;
-    for (size_t i = 0 ; i < rel_size ; i++) {
-        if (removed[i] != -1) {
-            for (size_t j = i ; j < rel_size - 1 ; j++) {
-                qry->relations[j] = qry->relations[j + 1];
-            }
-            qry->relations_size--;
-        }
-    }
-
-
-    FREE(removed);
-}
-
-
 DArray* parser() {
     DArray* queries = DArray_create(sizeof(query), 10);
 

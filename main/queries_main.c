@@ -33,18 +33,14 @@ int main() {
         }
     }
     DArray_destroy(query_list);
-    query_list = NULL;
 
-
-    for (size_t i = 0 ; i < DArray_count(metadata_arr); i++){
+    for (size_t i = 0 ; i < DArray_count(metadata_arr); i++) {
         metadata *met = (metadata *) DArray_get(metadata_arr, i);
-        if (met->data[i] != NULL){
-            for(size_t j = 0 ; j < met->columns ; j++){
-                FREE(met->data[j]->tuples);
-                FREE(met->data[j]);
-            }
-            FREE(met->data);
+        for(size_t j = 0 ; j < met->columns ; j++) {
+            FREE(met->data[j]->tuples);
+            FREE(met->data[j]);
         }
+        FREE(met->data);
     }
     
     DArray_destroy(metadata_arr);
