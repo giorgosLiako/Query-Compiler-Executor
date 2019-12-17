@@ -161,7 +161,26 @@ int read_relations(DArray *metadata_arr) {
         return -1;
 }
 
-ssize_t relation_exists(DArray *mid_results, uint64_t relation, uint64_t predicate_id) {
+exists_info relation_exists(DArray *mid_results_array, uint64_t relation, uint64_t predicate_id) {
+
+    exists_info exists;
+    exists.index = -1;
+    for (ssize_t i = DArray_count(mid_results_array) - 1 ; i >= 0 ; i--) {
+        DArray *mid_results = * (DArray **) DArray_get(mid_results_array, i);
+        for (ssize_t j = 0 ; j < DArray_count(mid_results) ; j++) {
+            mid_result *current = (mid_result *) DArray_get(mid_results, j);
+            if (current->relation == relation && current->predicate_id == predicate_id) {
+                exists.index = j;
+                exists.mid_result = i;
+                return exists;
+            }
+        }
+    }
+
+    return exists;
+}
+
+ssize_t relation_exists_current(DArray *mid_results, uint64_t relation, uint64_t predicate_id) {
 
     ssize_t found = -1;
     for (ssize_t i = 0 ; i < DArray_count(mid_results) ; i++) {
@@ -174,37 +193,31 @@ ssize_t relation_exists(DArray *mid_results, uint64_t relation, uint64_t predica
     return found;
 }
 
+
 static void print_sums(DArray *mid_results_array, uint32_t *relations, DArray *metadata_arr, relation_column *selects, size_t select_size) {
 
-    size_t count = 0;
-    for (ssize_t j = DArray_count(mid_results_array) - 1 ; j >= 0 ; j--) {
-        DArray *mid_results = *(DArray **) DArray_get(mid_results_array, j);
-        for (size_t i = 0 ; i < select_size ; i++) {
-            uint32_t rel = relations[selects[i].relation];
-            uint32_t col = selects[i].column;
+    for (size_t i = 0 ; i < select_size ; i++) {
+        uint32_t rel = relations[selects[i].relation];
+        uint32_t col = selects[i].column;
 
-            ssize_t index = relation_exists(mid_results, rel , selects[i].relation);
-            if (index == -1) {
-                log_err("Something went really wrong...");
-                exit(EXIT_FAILURE);
-            }
-            count++;
-            mid_result *res = DArray_get(mid_results, index);
-
-            if (DArray_count(res->payloads) == 0) {
-                printf("%s", "NULL ");
-            } else {
-                uint64_t sum = 0;
-                relation *tmp_rel = ((metadata *) DArray_get(metadata_arr, rel))->data[col];
-                //printf("size->%u ", DArray_count(res->payloads));
-                for (ssize_t j = 0 ; j < DArray_count(res->payloads) ; j++) {
-                    sum += tmp_rel->tuples[*(uint64_t *) DArray_get(res->payloads, j)].key;
-                }
-                printf("%lu ", sum);
-            }
+        exists_info exists = relation_exists(mid_results_array, rel, selects[i].relation);
+        if (exists.index == -1) {
+            log_err("Something went really wrong...");
+            exit(EXIT_FAILURE);
         }
-        if (count == select_size) {
-            break;
+        debug("EXISTS, mid_result = %u, index = %u", exists.mid_result, exists.index);
+        DArray *mid_results = *(DArray **) DArray_get(mid_results_array, exists.mid_result);
+        mid_result *res = DArray_get(mid_results, exists.index);
+
+        if (DArray_count(res->payloads) == 0) {
+            printf("%s", "NULL ");
+        } else {
+            uint64_t sum = 0;
+            relation *tmp_rel = ((metadata *) DArray_get(metadata_arr, rel))->data[col];
+            for (ssize_t j = 0 ; j < DArray_count(res->payloads) ; j++) {
+                sum += tmp_rel->tuples[*(uint64_t *) DArray_get(res->payloads, j)].key;
+            }
+            printf("%lu ", sum);
         }
     }
     printf("\n");
@@ -246,10 +259,10 @@ static int execute_query(query* q , DArray* metadata_arr) {
 
     DArray *mid_results_array = DArray_create(sizeof(DArray *), 2);
 
-    debug("Executing query : ");
+    /*debug("Executing query : ");
     print_relations(q->relations, q->relations_size);
     print_predicates(q->predicates, q->predicates_size);
-    print_select(q->selects, q->select_size);
+    print_select(q->selects, q->select_size);*/
     
   
     for (size_t i = 0 ; i < (size_t)q->predicates_size ; i++) {

@@ -11,6 +11,11 @@
 #include "structs.h"
 #include "DArray.h"
 
+typedef struct exists_info {
+    ssize_t mid_result;
+    ssize_t index;
+} exists_info;
+
 #define get_byte(num, byte) ( num >> ( (sizeof(num) << 3) - (byte << 3) ) & 0xFF)
 
 void build_histogram(relation *, histogram *, uint8_t, int, int);
@@ -27,9 +32,9 @@ void swap_arrays(relation *, relation *);
 
 int read_relations(DArray *);
 
-ssize_t relation_exists(DArray *, uint64_t , uint64_t);
+exists_info relation_exists(DArray *, uint64_t , uint64_t);
 
-DArray* parser();
+ssize_t relation_exists_current(DArray *, uint64_t, uint64_t);
 
 void execute_queries(DArray * , DArray * );
 
