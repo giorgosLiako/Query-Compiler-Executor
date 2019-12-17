@@ -525,7 +525,7 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
 
     if (retval == CLASSIC_JOIN) {
         //Means its a classic join, sort both relations and join them
-        // debug("CLASSIC JOIN");
+        debug("CLASSIC JOIN");
         iterative_sort(rel[0]);
         iterative_sort(rel[1]);
 
@@ -533,20 +533,20 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
     }
     else if (retval == JOIN_SORT_LHS) {
         //Means one of the relations is already sorted, sorted only the left one
-        // debug("JOIN_SORT_LHS");
+        debug("JOIN_SORT_LHS");
         iterative_sort(rel[0]);
 
         join_res = join_relations(rel[0], rel[1], &error);
     }
     else if (retval == JOIN_SORT_RHS) {
-        // debug("JOIN_SORT_RHS");
+        debug("JOIN_SORT_RHS");
         iterative_sort(rel[1]);
 
         join_res = join_relations(rel[0], rel[1], &error);
 
     }
     else if (retval == SCAN_JOIN) {
-        // debug("SCAN_JOIN");
+        debug("SCAN_JOIN");
         join_res = scan_join(rel[0], rel[1], &error);
     }
     else if (retval == DO_NOTHING) {
