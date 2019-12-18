@@ -1,6 +1,6 @@
 #Makefile (project)
 
-CFLAGS=-g3 -O2 -Wall -Wchkp -Wextra -D_FORTIFY_SOURCE=2 $(OPTFLAGS)
+CFLAGS=-g3 -O2 -Wall -Wchkp -Wextra -D_FORTIFY_SOURCE=2 -DDEBUG $(OPTFLAGS)
 LDFLAGS=$(OPTLIBS)
 PREFIX?=/usr/local
 
