@@ -63,14 +63,23 @@ static int exec_filter_rel_no_exists(predicate *pred,relation* rel , uint64_t nu
     return 0;
 }
 
-int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results) {
+int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results_array) {
 
     metadata *tmp_data = (metadata*) DArray_get(metadata_arr, relations[pred->first.relation]);
     relation *rel = tmp_data->data[pred->first.column];
     uint64_t *number = (uint64_t*) pred->second; 
 
-    ssize_t index;
-    if ((index = relation_exists(mid_results, relations[pred->first.relation],pred->first.relation)) != -1)  {   
+    DArray *mid_results = NULL;
+    if (DArray_count(mid_results_array) == 0) {
+        mid_results = DArray_create(sizeof(mid_result), 4);
+        DArray_push(mid_results_array, &mid_results);
+    } 
+    else { 
+        mid_results = * (DArray **) DArray_last(mid_results_array);
+    }
+
+    ssize_t index = relation_exists(mid_results, relations[pred->first.relation], pred->first.relation);
+    if (index != -1)  {   
         check(exec_filter_rel_exists(pred, rel, *number, (mid_result *) DArray_get(mid_results, index)) != -1, "Execution of filter failed!");
     } else {
         mid_result res;
@@ -80,7 +89,6 @@ int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, D
         res.payloads = DArray_create(sizeof(uint64_t), 100);
         DArray_push(mid_results, &res);
         check(exec_filter_rel_no_exists(pred, rel, *number, (mid_result *) DArray_last(mid_results)) != -1, "Execution of filter failed!");
-        //debug("Filter executed, results = %d", DArray_count(res.payloads));
     }
 
     return 0;

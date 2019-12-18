@@ -10,6 +10,16 @@
 #include "../src/DArray.h"
 #include "../src/parsing.h"
 
+void check_metadata(DArray* metadata_arr)
+{
+    metadata *tmp_data = (metadata*) DArray_get(metadata_arr, 0);
+    relation *rel = tmp_data->data[2];
+
+    for (ssize_t i = 0 ; i < (ssize_t) rel->num_tuples ; i++)
+    {
+        printf("%lu %lu\n",rel->tuples[i].payload , rel->tuples[i].key);
+    }
+}
 
 int main() {
 
@@ -19,7 +29,8 @@ int main() {
 
     DArray *query_list = parser(metadata_arr);
     check(query_list != NULL, "Parsing failed");
-    
+    //check_metadata(metadata_arr);
+    printf("--------------------------\n");
     execute_queries(query_list, metadata_arr);
 
     for (size_t i = 0 ; i < DArray_count(query_list); i++){
@@ -33,25 +44,21 @@ int main() {
         }
     }
     DArray_destroy(query_list);
-    query_list = NULL;
-
-
-    for (size_t i = 0 ; i < DArray_count(metadata_arr); i++){
+    
+    for (size_t i = 0 ; i < DArray_count(metadata_arr); i++) {
         metadata *met = (metadata *) DArray_get(metadata_arr, i);
-        if (met->data[i] != NULL){
-            for(size_t j = 0 ; j < met->columns ; j++){
-                FREE(met->data[j]->tuples);
-                FREE(met->data[j]);
-            }
-            FREE(met->data);
+        for(size_t j = 0 ; j < met->columns ; j++) {
+            FREE(met->data[j]->tuples);
+            FREE(met->data[j]);
         }
+        FREE(met->data);
     }
     
     DArray_destroy(metadata_arr);
-
+    
     return EXIT_SUCCESS;
 
      error:
-         DArray_destroy(metadata_arr);
-         return EXIT_FAILURE;
+        //DArray_destroy(metadata_arr);
+        return EXIT_FAILURE;
 }
