@@ -373,6 +373,7 @@ static join_result join_relations(relation *relR, relation *relS, int *error) {
             
         }
         pr++;
+        debug("pr = %u", pr);
     }
 
     Hashmap_destroy(map);
@@ -421,23 +422,65 @@ static join_result scan_join(relation *relR, relation *relS, int *error) {
         return res;
 } 
 
-DArray *new(DArray *driver, DArray *last, DArray *edit){
 
-    DArray *n = DArray_create(sizeof(uint64_t), 1000);
+static DArray* join_payloads(DArray *driver, DArray *last, DArray *edit) {
 
-    size_t count = DArray_count(n);
-
-    for (size_t i = 0; i < DArray_count(driver); i++) {
-        uint64_t id = *((uint64_t*) DArray_get(driver, i));
-        for (size_t j = 0; j < DArray_count(last); j++) {
-            if (id == *((uint64_t*) DArray_get(last, j))){
-                count++;
-                uint64_t n_id = *((uint64_t*) DArray_get(edit, j));
-                DArray_push(n, &n_id);
-            }
-        }
+    relation *relR = MALLOC(relation, 1);
+    relR->num_tuples = DArray_count(last);
+    relR->tuples = MALLOC(tuple, relR->num_tuples);
+    for (size_t i = 0 ; i < relR->num_tuples ; i++) {
+        relR->tuples[i].key = * (uint64_t *) DArray_get(last, i);
+        relR->tuples[i].payload = * (uint64_t *) DArray_get(edit, i);
     }
-    return n;
+
+    relation *relS = MALLOC(relation, 1);
+    relS->num_tuples = DArray_count(driver);
+    relS->tuples = MALLOC(tuple, relS->num_tuples);
+    for (size_t i = 0 ; i < relS->num_tuples ; i++) {
+        relS->tuples[i].key = * (uint64_t *) DArray_get(driver, i);
+        relS->tuples[i].payload = 0;
+    }
+
+    iterative_sort(relR);
+    iterative_sort(relS);
+
+    size_t pr = 0; 
+    size_t s_start = 0; 
+
+    DArray *result = DArray_create(sizeof(uint64_t), 1000);
+
+    while (pr < relR->num_tuples && s_start < relS->num_tuples) {
+        
+        size_t ps = s_start;
+        int flag = 0;
+
+        while ( ps < relS->num_tuples){
+            if (relR->tuples[pr].key < relS->tuples[ps].key)
+                break;
+            
+            if (relR->tuples[pr].key > relS->tuples[ps].key){
+                ps++;
+                if (flag == 0) {
+                    s_start = ps;
+                }
+            }
+            else {
+                DArray_push(result, &relR->tuples[pr].payload);
+                flag = 1;
+                ps++;
+            }
+            
+        }
+        pr++;
+        debug("pr = %u", pr);
+    }
+
+    FREE(relR->tuples);
+    FREE(relR);
+    FREE(relS->tuples);
+    FREE(relS);
+
+    return result;
 }
 
 static void fix_all_mid_results(join_result join_res, exists_info exists, DArray *mid_results_array, uint32_t relR, uint32_t relS, mid_result tmp, int mode) {
@@ -449,8 +492,8 @@ static void fix_all_mid_results(join_result join_res, exists_info exists, DArray
 
         for (size_t i = 0; i < DArray_count(mid_results); i++) {
             mid_result *edit = (mid_result *) DArray_get(mid_results, i);
-            if ( edit->relation != relR && edit->relation != relS) {
-                edit->payloads = new(no_dup, update->payloads, edit->payloads);    
+            if (edit->relation != relR && edit->relation != relS) {
+                edit->payloads = join_payloads(no_dup, update->payloads, edit->payloads);   
             }
         }
         mid_result *destroy = (mid_result *) DArray_get(mid_results, exists.index);
@@ -581,6 +624,8 @@ static void update_mid_results(join_result join_res, DArray *mid_results_array, 
         update->payloads = payloads_S;
     }
 
+    DArray_destroy(join_res.non_duplicates[0]);
+    DArray_destroy(join_res.non_duplicates[1]);
 }
 
 int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results_array) {
