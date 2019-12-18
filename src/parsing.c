@@ -125,7 +125,7 @@ DArray* parser() {
     while ((characters = getline(&line_ptr, &n, stdin)) != -1) {
         
         if (line_ptr[0] == 'F') {
-            break;
+            continue;
         }
         char relations[128], predicates[128], select[128];
 
@@ -137,18 +137,12 @@ DArray* parser() {
         parse_predicates(predicates, &new_query);
         
         parse_select(select,  &new_query);
-
-       // rename_relations(&new_query);
         
         DArray_push(queries, &new_query);
 
     }
-    check(characters != -1, "Getline failed");
 
     FREE(line_ptr);
     return queries;
 
-    error:
-        DArray_destroy(queries);
-        return NULL;
 }

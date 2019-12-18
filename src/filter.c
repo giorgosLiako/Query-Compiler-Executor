@@ -78,9 +78,10 @@ int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, D
         mid_results = * (DArray **) DArray_last(mid_results_array);
     }
 
-    ssize_t index = relation_exists(mid_results, relations[pred->first.relation], pred->first.relation);
-    if (index != -1)  {   
-        check(exec_filter_rel_exists(pred, rel, *number, (mid_result *) DArray_get(mid_results, index)) != -1, "Execution of filter failed!");
+    exists_info exists = relation_exists(mid_results_array, relations[pred->first.relation], pred->first.relation);
+    if (exists.index != -1)  {
+        DArray *mid_results = *(DArray **) DArray_get(mid_results_array, exists.mid_result);   
+        check(exec_filter_rel_exists(pred, rel, *number, (mid_result *) DArray_get(mid_results, exists.index)) != -1, "Execution of filter failed!");
     } else {
         mid_result res;
         res.relation = relations[pred->first.relation];
@@ -89,6 +90,7 @@ int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, D
         res.payloads = DArray_create(sizeof(uint64_t), 100);
         DArray_push(mid_results, &res);
         check(exec_filter_rel_no_exists(pred, rel, *number, (mid_result *) DArray_last(mid_results)) != -1, "Execution of filter failed!");
+        debug("filter results = %u", DArray_count(res.payloads));
     }
 
     return 0;
