@@ -373,7 +373,7 @@ static join_result join_relations(relation *relR, relation *relS, int *error) {
             
         }
         pr++;
-        debug("pr = %u", pr);
+        //debug("pr = %u", pr);
     }
 
     Hashmap_destroy(map);
@@ -472,7 +472,7 @@ static DArray* join_payloads(DArray *driver, DArray *last, DArray *edit) {
             
         }
         pr++;
-        debug("pr = %u", pr);
+        //debug("pr = %u", pr);
     }
 
     FREE(relR->tuples);
@@ -638,6 +638,7 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
 
     if (retval == CLASSIC_JOIN) {
         //Means its a classic join, sort both relations and join them
+        debug("CLASSIC JOIN");
         iterative_sort(rel[0]);
         iterative_sort(rel[1]);
 
@@ -645,16 +646,19 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
     }
     else if (retval == JOIN_SORT_LHS) {
         //Means one of the relations is already sorted, sorted only the left one
+        debug("JOIN_SORT_LHS");
         iterative_sort(rel[0]);
 
         join_res = join_relations(rel[0], rel[1], &error);
     }
     else if (retval == JOIN_SORT_RHS) {
+        debug("JOIN_SORT_RHS");
         iterative_sort(rel[1]);
 
         join_res = join_relations(rel[0], rel[1], &error);
     }
     else if (retval == SCAN_JOIN) {
+        debug("SCAN_JOIN");
         join_res = scan_join(rel[0], rel[1], &error);
     }
     else if (retval == DO_NOTHING) {
@@ -665,9 +669,7 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
     }
 
     update_mid_results(join_res, mid_results_array, relations[pred->first.relation],pred->first.relation, pred->first.column, relations[((relation_column *) pred->second)->relation],((relation_column *) pred->second)->relation , ((relation_column *) pred->second)->column, retval);
-
-    //DArray_destroy(join_res.non_duplicates[0]);
-    //DArray_destroy(join_res.non_duplicates[1]);
+    
     FREE(rel[0]->tuples);
     FREE(rel[0]);
     FREE(rel[1]->tuples);

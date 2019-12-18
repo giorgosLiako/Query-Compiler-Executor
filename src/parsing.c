@@ -128,7 +128,7 @@ DArray* parser() {
             continue;
         }
         char relations[128], predicates[128], select[128];
-       
+
         sscanf(line_ptr, "%[0-9 ]%*[|]%[0-9.=<>&]%*[|]%[0-9. ]", relations, predicates, select);
 
         query new_query;

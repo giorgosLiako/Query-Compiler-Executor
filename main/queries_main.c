@@ -10,6 +10,16 @@
 #include "../src/DArray.h"
 #include "../src/parsing.h"
 
+void check_metadata(DArray* metadata_arr)
+{
+    metadata *tmp_data = (metadata*) DArray_get(metadata_arr, 0);
+    relation *rel = tmp_data->data[2];
+
+    for (ssize_t i = 0 ; i < (ssize_t) rel->num_tuples ; i++)
+    {
+        printf("%lu %lu\n",rel->tuples[i].payload , rel->tuples[i].key);
+    }
+}
 
 int main() {
 
@@ -49,10 +59,10 @@ int main() {
     }
     
     DArray_destroy(metadata_arr);
-
+    
     return EXIT_SUCCESS;
 
      error:
-         DArray_destroy(metadata_arr);
-         return EXIT_FAILURE;
+        //DArray_destroy(metadata_arr);
+        return EXIT_FAILURE;
 }
