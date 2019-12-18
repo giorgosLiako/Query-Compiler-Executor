@@ -2,6 +2,8 @@
 *.a
 .*
 r*
+*.result
 *.init
 *.work
 input*
+queries
