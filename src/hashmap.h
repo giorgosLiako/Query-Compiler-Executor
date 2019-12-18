@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "DArray.h"
 
-#define BUCKETS 100
+#define BUCKETS 1000
 
 typedef int32_t (*Hashmap_compare) (const void *, const void *);
 

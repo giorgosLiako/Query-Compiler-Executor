@@ -330,12 +330,12 @@ static join_result join_relations(relation *relR, relation *relS, int *error) {
     res.results[0] = NULL;
     res.results[1] = NULL;
 
-    DArray *results_r = DArray_create(sizeof(uint64_t), 1000);
+    DArray *results_r = DArray_create(sizeof(uint64_t), 20000);
     check(results_r != NULL, "Couldn't allocate dynamic array");
-    DArray *results_s = DArray_create(sizeof(uint64_t), 1000);
+    DArray *results_s = DArray_create(sizeof(uint64_t), 2000);
     check(results_s != NULL, "Couldn't allocate dynamic array");
-    DArray *non_duplicates_r = DArray_create(sizeof(uint64_t), 1000);
-    DArray *non_duplicates_s = DArray_create(sizeof(uint64_t), 1000);
+    DArray *non_duplicates_r = DArray_create(sizeof(uint64_t), 2000);
+    DArray *non_duplicates_s = DArray_create(sizeof(uint64_t), 2000);
 
     Hashmap *map = Hashmap_create(sizeof(payloads), sizeof(payloads), hashmap_compare, hashmap_hash);
 
@@ -397,9 +397,9 @@ static join_result scan_join(relation *relR, relation *relS, int *error) {
     ssize_t pr = 0, ps = 0;
     join_result res;
 
-    DArray *results_r = DArray_create(sizeof(uint64_t), 100);
+    DArray *results_r = DArray_create(sizeof(uint64_t), 2000);
     check(results_r != NULL, "Couldnt allocate dynamic array");
-    DArray *results_s = DArray_create(sizeof(uint64_t), 100);
+    DArray *results_s = DArray_create(sizeof(uint64_t), 2000);
     check(results_s != NULL, "Couldn't allocate dynamic array");
 
     uint64_t iterations = relR->num_tuples < relS->num_tuples ? relR->num_tuples : relS->num_tuples;
@@ -447,7 +447,7 @@ static DArray* join_payloads(DArray *driver, DArray *last, DArray *edit) {
     size_t pr = 0; 
     size_t s_start = 0; 
 
-    DArray *result = DArray_create(sizeof(uint64_t), 1000);
+    DArray *result = DArray_create(sizeof(uint64_t), 2000);
 
     while (pr < relR->num_tuples && s_start < relS->num_tuples) {
         
@@ -493,9 +493,12 @@ static void fix_all_mid_results(join_result join_res, exists_info exists, DArray
         for (size_t i = 0; i < DArray_count(mid_results); i++) {
             mid_result *edit = (mid_result *) DArray_get(mid_results, i);
             if (edit->relation != relR && edit->relation != relS) {
-                edit->payloads = join_payloads(no_dup, update->payloads, edit->payloads);   
+                DArray *to_remove = edit->payloads;
+                edit->payloads = join_payloads(no_dup, update->payloads, edit->payloads); 
+                DArray_destroy(to_remove);  
             }
         }
+        DArray_destroy(no_dup);
         mid_result *destroy = (mid_result *) DArray_get(mid_results, exists.index);
         DArray_destroy(destroy->payloads);
         DArray_set(mid_results, exists.index, &tmp);
@@ -532,7 +535,6 @@ static void update_mid_results(join_result join_res, DArray *mid_results_array, 
         if (exists.index == -1) {
             DArray *mid_results = *(DArray **) DArray_last(mid_results_array);
             DArray_push(mid_results, &tmp_S);
-            debug("pushed to array");
         } else {
             fix_all_mid_results(join_res, exists, mid_results_array, relR, relS, tmp_S, 1);
         }
@@ -623,9 +625,6 @@ static void update_mid_results(join_result join_res, DArray *mid_results_array, 
         update = (mid_result *) DArray_get(mid_results, exists.index);
         update->payloads = payloads_S;
     }
-
-    DArray_destroy(join_res.non_duplicates[0]);
-    DArray_destroy(join_res.non_duplicates[1]);
 }
 
 int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results_array) {
@@ -667,6 +666,8 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
 
     update_mid_results(join_res, mid_results_array, relations[pred->first.relation],pred->first.relation, pred->first.column, relations[((relation_column *) pred->second)->relation],((relation_column *) pred->second)->relation , ((relation_column *) pred->second)->column, retval);
 
+    //DArray_destroy(join_res.non_duplicates[0]);
+    //DArray_destroy(join_res.non_duplicates[1]);
     FREE(rel[0]->tuples);
     FREE(rel[0]);
     FREE(rel[1]->tuples);
