@@ -20,6 +20,7 @@
 
 typedef struct result {
     DArray *results[2];
+    DArray *non_duplicates[2];
 } join_result;
 
 int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results);

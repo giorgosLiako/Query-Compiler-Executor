@@ -259,10 +259,10 @@ static int execute_query(query* q , DArray* metadata_arr) {
 
     DArray *mid_results_array = DArray_create(sizeof(DArray *), 2);
 
-    /*debug("Executing query : ");
+    debug("Executing query : ");
     print_relations(q->relations, q->relations_size);
     print_predicates(q->predicates, q->predicates_size);
-    print_select(q->selects, q->select_size);*/
+    print_select(q->selects, q->select_size);
     
   
     for (size_t i = 0 ; i < (size_t)q->predicates_size ; i++) {

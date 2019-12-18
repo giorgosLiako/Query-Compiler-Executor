@@ -1,4 +1,5 @@
 #include "join.h"
+#include "hashmap.h"
 
 //functions that sorts iterative one relation
 static int iterative_sort(relation *rel) {
@@ -209,7 +210,7 @@ static int build_relations(predicate *pred, uint32_t *relations, DArray *metadat
             else if (mid_res->last_column_sorted == (int32_t) lhs_col) {
                 return JOIN_SORT_RHS;
             }
-            else if (mid_res->last_column_sorted == (int32_t) rhs_col) {
+            else if (tmp_mid_result->last_column_sorted == (int32_t) rhs_col) {
                 return JOIN_SORT_LHS;
             }
             else {
@@ -290,6 +291,37 @@ static int build_relations(predicate *pred, uint32_t *relations, DArray *metadat
 
 }
 
+typedef struct payloads {
+    uint64_t payload_R;
+    uint64_t payload_S;
+} payloads;
+
+
+int32_t hashmap_compare(const void *lhs, const void *rhs) {
+
+    const payloads pay_lhs = *(const payloads *) lhs;
+    const payloads pay_rhs = *(const payloads *) rhs;
+
+    if (pay_lhs.payload_R == pay_rhs.payload_R && pay_rhs.payload_S == pay_lhs.payload_S) {
+        return 0;
+    } 
+    else {
+        return 1;
+    }
+}
+
+uint32_t hashmap_hash(void *key) {
+
+    payloads pay_l = *(payloads *) key;
+    uint32_t u_key = ((pay_l.payload_R & 0xFFFF) << 16) | (pay_l.payload_S & 0xFFFF);
+    u_key = (u_key ^ 61) ^ (u_key >> 16);
+    u_key = u_key + (u_key << 3);
+    u_key = u_key ^ (u_key >> 4);
+    u_key = u_key * 0x27d4eb2d;
+    u_key = u_key ^ (u_key >> 15);
+    return u_key;
+}
+
 static join_result join_relations(relation *relR, relation *relS, int *error) {
     
     size_t pr = 0; 
@@ -298,10 +330,14 @@ static join_result join_relations(relation *relR, relation *relS, int *error) {
     res.results[0] = NULL;
     res.results[1] = NULL;
 
-    DArray *results_r = DArray_create(sizeof(uint64_t), 100);
-    check(results_r != NULL, "Couldnt allocate dynamic array");
-    DArray *results_s = DArray_create(sizeof(uint64_t), 100);
+    DArray *results_r = DArray_create(sizeof(uint64_t), 1000);
+    check(results_r != NULL, "Couldn't allocate dynamic array");
+    DArray *results_s = DArray_create(sizeof(uint64_t), 1000);
     check(results_s != NULL, "Couldn't allocate dynamic array");
+    DArray *non_duplicates_r = DArray_create(sizeof(uint64_t), 1000);
+    DArray *non_duplicates_s = DArray_create(sizeof(uint64_t), 1000);
+
+    Hashmap *map = Hashmap_create(sizeof(payloads), sizeof(payloads), hashmap_compare, hashmap_hash);
 
     while (pr < relR->num_tuples && s_start < relS->num_tuples) {
         
@@ -318,7 +354,17 @@ static join_result join_relations(relation *relR, relation *relS, int *error) {
                     s_start = ps;
                 }
             }
-            else{
+            else {
+                payloads pay_l;
+                pay_l.payload_R = relR->tuples[pr].payload;
+                pay_l.payload_S = relS->tuples[ps].payload;
+
+                if (Hashmap_get(map, &pay_l) == NULL) {
+                    //If you didn't find that entry before, push it
+                    check(DArray_push(non_duplicates_r, &(relR->tuples[pr].payload)) == 0, "Failed to push to array");
+                    check(DArray_push(non_duplicates_s, &(relS->tuples[ps].payload)) == 0, "Failed to push to array");
+                    Hashmap_set(map, &pay_l, &pay_l);
+                }
                 check(DArray_push(results_r, &(relR->tuples[pr].payload)) == 0, "Failed to push to array");
                 check(DArray_push(results_s, &(relS->tuples[ps].payload)) == 0, "Failed to push to array");
                 flag = 1;
@@ -329,17 +375,21 @@ static join_result join_relations(relation *relR, relation *relS, int *error) {
         pr++;
     }
 
+    Hashmap_destroy(map);
+
     res.results[0] = results_r;
     res.results[1] = results_s;
+    res.non_duplicates[0] = non_duplicates_r;
+    res.non_duplicates[1] = non_duplicates_s;
 
-    debug("ended");
     *error = 0;
     return res;
 
     error:
         *error = 1;
         return res;
-}
+} 
+
 
 static join_result scan_join(relation *relR, relation *relS, int *error) {
 
@@ -369,57 +419,21 @@ static join_result scan_join(relation *relR, relation *relS, int *error) {
     error:
         *error = 1;
         return res;
-}
-
-static DArray* remove_duplicates(join_result join_res, int mode) {
-    DArray *payloads_R = join_res.results[0];
-    DArray *payloads_S = join_res.results[1];
-
-    DArray *results_r = DArray_create(sizeof(uint64_t), 100);
-    DArray *results_s = DArray_create(sizeof(uint64_t), 100);
-
-
-    size_t size = DArray_count(payloads_R);
-    size_t new_size = DArray_count(results_r);
-
-    for (size_t i = 0; i < size; i++) {
-        char found = 0;
-        uint64_t R = *((uint64_t*) DArray_get(payloads_R,i));
-        uint64_t S = *((uint64_t*) DArray_get(payloads_S,i));
-        for (size_t j = 0; j < new_size; j++) {
-            if (R == *((uint64_t*) DArray_get(results_r, j)) &&
-                S == *((uint64_t*) DArray_get(results_s, j)) ){
-                    found = 1;
-                    break;
-                }
-        }
-
-        if (found == 0) {   
-            DArray_push(results_r, &R);
-            DArray_push(results_s, &S);
-            new_size++;
-        }
-    }
-
-    return mode == 0 ? results_r : results_s;
-
-}
+} 
 
 DArray *new(DArray *driver, DArray *last, DArray *edit){
 
-    DArray *n = DArray_create(sizeof(uint64_t), 100);
+    DArray *n = DArray_create(sizeof(uint64_t), 1000);
 
     size_t count = DArray_count(n);
-    
 
     for (size_t i = 0; i < DArray_count(driver); i++) {
         uint64_t id = *((uint64_t*) DArray_get(driver, i));
         for (size_t j = 0; j < DArray_count(last); j++) {
             if (id == *((uint64_t*) DArray_get(last, j))){
                 count++;
-
                 uint64_t n_id = *((uint64_t*) DArray_get(edit, j));
-                DArray_push(n, &n_id);   
+                DArray_push(n, &n_id);
             }
         }
     }
@@ -428,18 +442,17 @@ DArray *new(DArray *driver, DArray *last, DArray *edit){
 
 static void fix_all_mid_results(join_result join_res, exists_info exists, DArray *mid_results_array, uint32_t relR, uint32_t relS, mid_result tmp, int mode) {
         
-        DArray *no_dup = remove_duplicates(join_res, mode);
-        debug("removed_duplicates");
+        DArray *no_dup = join_res.non_duplicates[mode];
+
         DArray *mid_results = *(DArray **) DArray_get(mid_results_array, exists.mid_result);
         mid_result *update = (mid_result *) DArray_get(mid_results, exists.index);
 
         for (size_t i = 0; i < DArray_count(mid_results); i++) {
             mid_result *edit = (mid_result *) DArray_get(mid_results, i);
-            if ( edit->relation != relR && edit->relation != relS){
+            if ( edit->relation != relR && edit->relation != relS) {
                 edit->payloads = new(no_dup, update->payloads, edit->payloads);    
             }
         }
-        debug("new OK");
         mid_result *destroy = (mid_result *) DArray_get(mid_results, exists.index);
         DArray_destroy(destroy->payloads);
         DArray_set(mid_results, exists.index, &tmp);
@@ -452,7 +465,6 @@ static void update_mid_results(join_result join_res, DArray *mid_results_array, 
 
     if (join_id == CLASSIC_JOIN) {
         /*If we sorted both relations, add them both to mid results */
-        debug("IT WAS A CLASSIC ONE");
         mid_result tmp_R;
         tmp_R.last_column_sorted = colR;
         tmp_R.payloads = payloads_R;
@@ -463,7 +475,6 @@ static void update_mid_results(join_result join_res, DArray *mid_results_array, 
         if (exists.index == -1) {
             DArray *mid_results = *(DArray **) DArray_last(mid_results_array);
             DArray_push(mid_results, &tmp_R);
-            debug("pushed to array");
         } else {
             fix_all_mid_results(join_res, exists, mid_results_array, relR, relS, tmp_R, 0);
         }
@@ -517,7 +528,6 @@ static void update_mid_results(join_result join_res, DArray *mid_results_array, 
         fix_all_mid_results(join_res, exists, mid_results_array, relR, relS, tmp_S, 1);
     }
     else if (join_id == JOIN_SORT_RHS) {
-        
         mid_result tmp_S;
         tmp_S.last_column_sorted = colS;
         tmp_S.payloads = payloads_S;
@@ -555,12 +565,6 @@ static void update_mid_results(join_result join_res, DArray *mid_results_array, 
             log_err("Something went really wrong");
             exit(EXIT_FAILURE);
         }
-        
-        /*mid_result tmp_R;
-        tmp_R.payloads = payloads_R;
-        tmp_R.relation = relR;
-        tmp_R.predicate_id = predR_id;
-        fix_all_mid_results(join_res, exists, mid_results_array, relR, relS, tmp_R, 0);*/
        
         DArray *mid_results = *(DArray **) DArray_get(mid_results_array, exists.mid_result);
         mid_result *update = (mid_result *) DArray_get(mid_results, exists.index);
@@ -571,11 +575,6 @@ static void update_mid_results(join_result join_res, DArray *mid_results_array, 
             log_err("Something went really wrong");
             exit(EXIT_FAILURE);
         }
-       /* mid_result tmp_S;
-        tmp_S.payloads = payloads_S;
-        tmp_S.relation = relS;
-        tmp_S.predicate_id = predS_id;
-        fix_all_mid_results(join_res, exists, mid_results_array, relR, relS, tmp_S, 1);*/
         
         mid_results = *(DArray **) DArray_get(mid_results_array, exists.mid_result);
         update = (mid_result *) DArray_get(mid_results, exists.index);
