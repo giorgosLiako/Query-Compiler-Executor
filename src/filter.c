@@ -1,5 +1,6 @@
 #include "filter.h"
 
+/*
 static int exec_filter_rel_exists(predicate *pred , relation* rel , uint64_t number , mid_result* tmp_results) {  
     //take the saved payloads and check if they satisfy the new filter
     for(size_t i = 0 ; i <  DArray_count(tmp_results->payloads) ; i++) {   
@@ -61,11 +62,11 @@ static int exec_filter_rel_no_exists(predicate *pred,relation* rel , uint64_t nu
     }
 
     return 0;
-}
+}*/
 
 int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results_array) {
 
-    metadata *tmp_data = (metadata*) DArray_get(metadata_arr, relations[pred->first.relation]);
+   /* metadata *tmp_data = (metadata*) DArray_get(metadata_arr, relations[pred->first.relation]);
     relation *rel = tmp_data->data[pred->first.column];
     uint64_t *number = (uint64_t*) pred->second; 
 
@@ -91,10 +92,10 @@ int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, D
         DArray_push(mid_results, &res);
         check(exec_filter_rel_no_exists(pred, rel, *number, (mid_result *) DArray_last(mid_results)) != -1, "Execution of filter failed!");
         debug("filter results = %u", DArray_count(res.payloads));
-    }
+    }*/
 
     return 0;
 
-    error:
+   // error:
         return -1;
 }

@@ -9,8 +9,8 @@
 #include "alloc_free.h"
 #include "dbg.h"
 #include "utilities.h"
-#include "queue.h"
 #include "quicksort.h"
+#include "queries.h"
 
 #define CLASSIC_JOIN 1
 #define JOIN_SORT_LHS 2
@@ -23,6 +23,17 @@ typedef struct result {
     DArray *non_duplicates[2];
 } join_result;
 
-int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results);
+typedef struct join_arguments {
+    uint32_t start;
+    uint32_t end;
+    uint16_t **indices_to_check;
+    relation *rel_R;
+    relation *rel_S;
+    DArray *queue_R;
+    DArray *queue_S;
+    uint32_t found;
+} join_arguments;
+
+int execute_join(relation *relR, relation *relS, DArray *queue_R, DArray *queue_S, thr_pool_t *pool);
 
 #endif

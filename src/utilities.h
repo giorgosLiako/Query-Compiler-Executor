@@ -1,20 +1,21 @@
 #ifndef UTILITIES_H
 #define UTILITIES_H
 
-#include <stdbool.h>
-#include <stdint.h>
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "alloc_free.h"
-#include "histogram.h"
 #include "dbg.h"
-#include "structs.h"
 #include "DArray.h"
-
-typedef struct exists_info {
-    ssize_t mid_result;
-    ssize_t index;
-} exists_info;
+#include "structs.h"
+#include "queries.h"
 
 #define get_byte(num, byte) ( num >> ( (sizeof(num) << 3) - (byte << 3) ) & 0xFF)
 
@@ -31,11 +32,5 @@ void free_reordered_array(relation *);
 void swap_arrays(relation *, relation *);
 
 int read_relations(DArray *);
-
-exists_info relation_exists(DArray *, uint64_t , uint64_t);
-
-ssize_t relation_exists_current(DArray *, uint64_t, uint64_t);
-
-void execute_queries(DArray * , DArray * );
 
 #endif

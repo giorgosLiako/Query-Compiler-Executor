@@ -1,6 +1,6 @@
 #Makefile (project)
 
-CFLAGS=-g3 -O2 -Wall -Wchkp -Wextra -D_FORTIFY_SOURCE=2 $(OPTFLAGS)
+CFLAGS=-g3 -O2 -Wall -Wchkp -D_FORTIFY_SOURCE=2 $(OPTFLAGS)
 LDFLAGS=$(OPTLIBS)
 PREFIX?=/usr/local
 
@@ -25,7 +25,7 @@ endif
 # The Target Build
 all: $(TARGET) $(SO_TARGET) main
 
-dev: CFLAGS=-g -Wall -Isrc -Wall -Wextra $(OPTFLAGS)
+dev: CFLAGS=-g -Wall -Isrc -Wall $(OPTFLAGS)
 dev: all
 
 $(TARGET): CFLAGS += -fPIC
@@ -43,7 +43,7 @@ build:
 # The Unit Tests
 .PHONY: tests
 main: $(TARGET)
-	$(CC) $(CFLAGS) -o queries $(MAIN_SRC) $(TARGET) 
+	$(CC) $(CFLAGS) -o queries $(MAIN_SRC) $(TARGET) -lpthread
 
 # The Cleaner
 clean:

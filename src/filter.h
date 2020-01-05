@@ -8,8 +8,8 @@
 #include "alloc_free.h"
 #include "dbg.h"
 #include "utilities.h"
-#include "queue.h"
 #include "quicksort.h"
+#include "structs.h"
 
 int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results);
 

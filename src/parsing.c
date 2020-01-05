@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include "parsing.h"
 
 static void parse_relations(char *string, query *q) {

@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "DArray.h"
 
+#define MAX_JOBS 4
+
 typedef struct tuple {
     uint64_t key;
     uint64_t payload;
@@ -12,40 +14,21 @@ typedef struct tuple {
 typedef struct relation {
     tuple *tuples;
     uint64_t num_tuples;
+    uint64_t max_value;
+    uint64_t min_value;
+    size_t distinct_values;
 } relation;
 
 typedef struct metadata {
     uint64_t tuples;
     uint64_t columns;
+    uint64_t max_values;
+    uint64_t min_values;
     relation **data;
 } metadata;
 
-typedef struct relation_column {
-    uint64_t relation;
-    uint64_t column;
-} relation_column;
-
-typedef struct predicate{
-    int8_t type;
-    relation_column first;
-    void *second;
-    char operator;
-} predicate;
-
-typedef struct query {
-    uint32_t* relations;
-    size_t relations_size;
-    predicate* predicates;
-    size_t predicates_size;
-    relation_column* selects;
-    size_t select_size;
-} query;
-
-typedef struct mid_result {
-    uint64_t relation;
-    uint64_t predicate_id;
-    int32_t last_column_sorted;
-    DArray* payloads;
-} mid_result;
+typedef struct histogram {
+    int32_t array[256];
+} histogram;
 
 #endif

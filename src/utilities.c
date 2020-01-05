@@ -1,20 +1,6 @@
-#define _GNU_SOURCE
-#include <stdio.h>
-#include <fcntl.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include "utilities.h"
-#include "histogram.h"
-#include "DArray.h"
-#include "pred_arrange.h"
-#include "join.h"
-#include "filter.h"
-#include "structs.h"
+
+#define N 500000000
 
 //function to build a histogram
 void build_histogram(relation *rel, histogram *hist, uint8_t wanted_byte, int start, int size) {
@@ -113,13 +99,26 @@ static inline void fill_data(metadata *m_data, uint64_t *mapped_file) {
         rel->num_tuples = m_data->tuples;
         rel->tuples = MALLOC(tuple, m_data->tuples);
         m_data->data[j] = rel;
+        uint64_t max_value;
+        uint64_t min_value;
         for (size_t i = 0 ; i < m_data->tuples ; i++) {
             rel->tuples[i].key = *mapped_file++;
             rel->tuples[i].payload = i;
+            if (i == 0) {
+                max_value = rel->tuples[i].key;
+                min_value = rel->tuples[i].key;
+            }
+            else {
+                if (rel->tuples[i].key > max_value) {
+                    max_value = rel->tuples[i].key;
+                }
+                if (rel->tuples[i].key < min_value) {
+                    min_value = rel->tuples[i].key;
+                }
+            } 
         }
     }
 }
-
 
 int read_relations(DArray *metadata_arr) {
 
@@ -161,140 +160,3 @@ int read_relations(DArray *metadata_arr) {
         return -1;
 }
 
-exists_info relation_exists(DArray *mid_results_array, uint64_t relation, uint64_t predicate_id) {
-
-    exists_info exists;
-    exists.index = -1;
-    for (ssize_t i = DArray_count(mid_results_array) - 1 ; i >= 0 ; i--) {
-        DArray *mid_results = * (DArray **) DArray_get(mid_results_array, i);
-        for (ssize_t j = 0 ; j < DArray_count(mid_results) ; j++) {
-            mid_result *current = (mid_result *) DArray_get(mid_results, j);
-            if (current->relation == relation && current->predicate_id == predicate_id) {
-                exists.index = j;
-                exists.mid_result = i;
-                return exists;
-            }
-        }
-    }
-
-    return exists;
-}
-
-ssize_t relation_exists_current(DArray *mid_results, uint64_t relation, uint64_t predicate_id) {
-
-    ssize_t found = -1;
-    for (ssize_t i = 0 ; i < DArray_count(mid_results) ; i++) {
-        mid_result res = *(mid_result *) DArray_get(mid_results, i);
-        if ((res.relation == relation) && (res.predicate_id == predicate_id) ) {
-            found = i;
-        }
-    }
-
-    return found;
-}
-
-
-static void print_sums(DArray *mid_results_array, uint32_t *relations, DArray *metadata_arr, relation_column *selects, size_t select_size) {
-
-    for (size_t i = 0 ; i < select_size ; i++) {
-        uint32_t rel = relations[selects[i].relation];
-        uint32_t col = selects[i].column;
-
-        exists_info exists = relation_exists(mid_results_array, rel, selects[i].relation);
-        if (exists.index == -1) {
-            log_err("Something went really wrong...");
-            exit(EXIT_FAILURE);
-        }
-        debug("EXISTS, mid_result = %u, index = %u", exists.mid_result, exists.index);
-        DArray *mid_results = *(DArray **) DArray_get(mid_results_array, exists.mid_result);
-        mid_result *res = DArray_get(mid_results, exists.index);
-
-        if (DArray_count(res->payloads) == 0) {
-            printf("%s", "NULL ");
-        } else {
-            uint64_t sum = 0;
-            relation *tmp_rel = ((metadata *) DArray_get(metadata_arr, rel))->data[col];
-            for (ssize_t j = 0 ; j < DArray_count(res->payloads) ; j++) {
-                sum += tmp_rel->tuples[*(uint64_t *) DArray_get(res->payloads, j)].key;
-            }
-            printf("%lu ", sum);
-        }
-    }
-    printf("\n");
-}
-
-void print_relations(uint32_t* relations, size_t size){
-    printf("Relations: \n\t");
-    for (size_t i = 0; i < size; i++) {
-        printf("%u ", relations[i]);
-    }
-    printf("\n");
-}
-
-void print_predicates(predicate* predicates, size_t size) {
-    printf("Predicates: \n");
-    for (size_t i = 0; i < size; i++) {
-        if (predicates[i].type == 0) {
-            relation_column *temp = (relation_column*) predicates[i].second;
-            printf("\t%lu.%lu %c %lu.%lu\n", predicates[i].first.relation, predicates[i].first.column, predicates[i].operator
-                    , temp->relation, temp->column);
-        } else if (predicates[i].type == 1) {
-            int *temp = (int*) predicates[i].second;
-            printf("\t%lu.%lu %c %d\n", predicates[i].first.relation, predicates[i].first.column, predicates[i].operator
-                    , *temp);
-        }
-    }
-}
-
-void print_select(relation_column* r_c, size_t size){
-    printf("Select: \n");
-    for (size_t i = 0; i < size; i++){
-        printf("\t%lu.%lu ", r_c[i].relation, r_c[i].column);
-    }
-    printf("\n");
-    
-}
-
-static int execute_query(query* q , DArray* metadata_arr) {
-
-    DArray *mid_results_array = DArray_create(sizeof(DArray *), 2);
-  
-    for (size_t i = 0 ; i < (size_t)q->predicates_size ; i++) {
-
-        if( q->predicates[i].type == 1) { //filter predicate
-            check(execute_filter(&q->predicates[i], q->relations, metadata_arr, mid_results_array) != -1, "");
-        } else {    //join predicate
-            check(execute_join(&q->predicates[i], q->relations, metadata_arr, mid_results_array) != -1, "Join failed!");
-        }
-    }
-
-    print_sums(mid_results_array, q->relations, metadata_arr, q->selects, q->select_size);
-
-    for (size_t j = 0 ; j < DArray_count(mid_results_array) ; j++) {
-        DArray *mid_results = *(DArray **) DArray_get(mid_results_array, j);
-        for (size_t i = 0 ; i < DArray_count(mid_results) ; i++) {
-            mid_result *res = (mid_result *) DArray_get(mid_results, i);
-            DArray_destroy(res->payloads);
-        }    
-        DArray_destroy(mid_results);
-    }
-    DArray_destroy(mid_results_array);
-
-    return 0;
-
-    error:
-        return -1;
-}
-
-void execute_queries(DArray *q_list, DArray *metadata_arr) {
-
-
-    for (size_t i = 0; i < DArray_count(q_list); i++) {
-
-        query *tmp_data = (query*) DArray_get(q_list, i);
-
-        arrange_predicates(tmp_data);
-
-        execute_query(tmp_data , metadata_arr);
-    }
-}

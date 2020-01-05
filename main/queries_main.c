@@ -1,53 +1,43 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <time.h>
-#include "../src/alloc_free.h"
-#include "../src/structs.h"
-#include "../src/dbg.h"
+#include "../src/join.h"
 #include "../src/utilities.h"
-#include "../src/DArray.h"
 #include "../src/parsing.h"
+#include "../src/queries.h"
+#include "../src/quicksort.h"
+#include "../src/structs.h"
 
-void check_metadata(DArray* metadata_arr)
-{
-    metadata *tmp_data = (metadata*) DArray_get(metadata_arr, 0);
-    relation *rel = tmp_data->data[2];
+#define MAX_THREADS 9
 
-    for (ssize_t i = 0 ; i < (ssize_t) rel->num_tuples ; i++)
-    {
-        printf("%lu %lu\n",rel->tuples[i].payload , rel->tuples[i].key);
-    }
-}
-
-int main() {
+int main(int argc, char *argv[]) {
 
     DArray *metadata_arr = DArray_create(sizeof(metadata), 10);
 
     check(read_relations(metadata_arr) != -1, "Something went wrong in reading the relations");
 
-    do {
-        DArray *query_list = parser();
-        
-        if (DArray_count(query_list) == 0) {
-            break;
-        }
-        
-        execute_queries(query_list, metadata_arr);
+    DArray *query_list = parser();
 
-        for (size_t i = 0 ; i < DArray_count(query_list); i++) {
-            query *qr = (query *) DArray_get(query_list, i);
-            if (qr != NULL){
-                FREE(qr->relations);
-                for(size_t j = 0 ; j < qr->predicates_size ; j++)
-                    FREE(qr->predicates[j].second);
-                FREE(qr->predicates);
-                FREE(qr->selects);
-            }
+    relation *relR = ((metadata *) DArray_get(metadata_arr, 0))->data[0];
+    relation *relS = ((metadata *) DArray_get(metadata_arr, 1))->data[0];
+   
+    thr_pool_t *pool = thr_pool_create(MAX_THREADS);
+
+
+   for (size_t i = 0 ; i < DArray_count(query_list); i++) {
+        query *qr = (query *) DArray_get(query_list, i);
+        if (qr != NULL){
+            FREE(qr->relations);
+            for(size_t j = 0 ; j < qr->predicates_size ; j++)
+                FREE(qr->predicates[j].second);
+            FREE(qr->predicates);
+            FREE(qr->selects);
         }
-        DArray_destroy(query_list);
-    } while (0);
+    }
+    DArray_destroy(query_list);
 
     for (size_t i = 0 ; i < DArray_count(metadata_arr); i++) {
         metadata *met = (metadata *) DArray_get(metadata_arr, i);
@@ -56,13 +46,14 @@ int main() {
             FREE(met->data[j]);
         }
         FREE(met->data);
-    }
+    } 
     
+    thr_pool_destroy(pool);
     DArray_destroy(metadata_arr);
     
     return EXIT_SUCCESS;
 
      error:
-        //DArray_destroy(metadata_arr);
+        DArray_destroy(metadata_arr);
         return EXIT_FAILURE;
 }
