@@ -11,14 +11,17 @@ static ssize_t random_in_range(ssize_t low, ssize_t high) {
 }
 
 //function to swap two tuples 
-static void swap(tuple *tuples, ssize_t i, ssize_t j) {
-    tuple tup = tuples[i];
-    tuples[i] = tuples[j];
-    tuples[j] = tup;
+static void swap(DArray *tuples, ssize_t i, ssize_t j) {
+    tuple *tup_i = (tuple *) DArray_get(tuples, i);
+    tuple *tup_j = (tuple *) DArray_get(tuples, j);
+
+    tuple *tmp = tup_i;
+    tup_i = tup_j;
+    tup_j = tmp;
 }
 
 //function to define the partition
-static ssize_t hoare_partition(tuple *tuples, ssize_t low, ssize_t high) {
+static ssize_t hoare_partition(DArray *tuples, ssize_t low, ssize_t high) {
 
     ssize_t i = low - 1;
     ssize_t j = high + 1;
@@ -27,17 +30,17 @@ static ssize_t hoare_partition(tuple *tuples, ssize_t low, ssize_t high) {
 
     swap(tuples, low, random); //swap tuple in index low with tuple in index random
 
-    uint64_t pivot = tuples[high].key;
+    uint64_t pivot = ((tuple *) DArray_get(tuples, high))->key;
 
     while (1) {
 
         do {
             i++;
-        } while (tuples[i].key < pivot);
+        } while (((tuple *) DArray_get(tuples, i))->key < pivot);
 
         do {
             j--;
-        } while (tuples[j].key > pivot);
+        } while (((tuple *) DArray_get(tuples, j))->key > pivot);
 
         if (i >= j) {
             return j;
@@ -47,8 +50,7 @@ static ssize_t hoare_partition(tuple *tuples, ssize_t low, ssize_t high) {
     }
 }
 
-//function to execute a quicksort
-static void random_quicksort(tuple *tuples, ssize_t low, ssize_t high) {
+static void random_quicksort(DArray *tuples, ssize_t low, ssize_t high) {
 
     if (low >= high) {
         return;
@@ -68,7 +70,7 @@ static void *sort_job(void *argm) {
     uint32_t start = args.start;
     uint32_t end = args.end;
     int index = args.index;
-    relation *relations[2] = {args.relations[0], args.relations[1]};
+    DArray *relations[2] = { (DArray *) args.relations[0], (DArray *) args.relations[1]};
 
     DArray *temp_queue = NULL;
     bool swapped = false;
@@ -85,16 +87,20 @@ static void *sort_job(void *argm) {
             ssize_t base = current_item->base, size = current_item->size; 
     
             if ( size*sizeof(tuple) + sizeof(uint64_t) < 32*1024) {
-                random_quicksort(relations[(i+1)%2]->tuples, base, base + size - 1);
+                random_quicksort_darray(relations[(i+1)%2], base, base + size - 1);
                 for (ssize_t j = base; j < base + size; j++) {
-                    relations[i%2]->tuples[j] = relations[(i+1)%2]->tuples[j];
-                }
+                    
+                    DArray *tup_1 = (tuple *) DArray_get(relations[i%2], j);
+                    DArray *tup_2 = (tuple *) DArray_get(relations[(i + 1)%2], j);
 
+                    tup_1->key = tup_2->key;
+                    tup_1->payload = tup_2->payload;                
+                }
             } else { 
                 histogram new_h, new_p;
-                build_histogram(relations[(i+1)%2], &new_h, i, base, size);
+                build_histogram_darray(relations[(i+1)%2], &new_h, i, base, size);
                 build_psum(&new_h, &new_p);
-                relations[i%2] = build_reordered_array(relations[i%2], relations[(i+1)%2], &new_h, &new_p, i, base, size);
+                relations[i%2] = build_reordered_darray(relations[i%2], relations[(i+1)%2], &new_h, &new_p, i, base, size);
     
                 for (ssize_t j = 0; j < 256 && i != 8; j++) {
                     if (new_h.array[j] != 0) {
@@ -120,21 +126,21 @@ static void *sort_job(void *argm) {
     return NULL;
 }
 
-//functions that sorts iterative one relation
-int iterative_sort(relation *rel, DArray **retval, thr_pool_t *pool) {
+
+int iterative_sort_darray(DArray *tuples, DArray **, thr_pool_t *pool) {
     
-    relation *reordered = allocate_reordered_array(rel);
+    DArray *reordered = allocate_reordered_darray(tuples);
     DArray *q = DArray_create(sizeof(queue_node), 256);
     check_mem(q);
 
-    relation *relations[2]; //to swap after each iteration
+    DArray *relations[2]; //to swap after each iteration
 
     histogram new_h, new_p;
     //build the first histogram and the first psum ( of all the array)
-    build_histogram(rel, &new_h, 1, 0, rel->num_tuples);
+    build_histogram_darray(tuples, &new_h, 1, 0, DArray_count(tuples));
     build_psum(&new_h, &new_p);
     //build the R' (reordered R)
-    reordered = build_reordered_array(reordered, rel, &new_h, &new_p, 1, 0, rel->num_tuples);
+    reordered = build_reordered_darray(reordered, tuples, &new_h, &new_p, 1, 0, DArray_count(tuples));
     
     relations[0] = rel;
     relations[1] = reordered;
@@ -181,19 +187,24 @@ int iterative_sort(relation *rel, DArray **retval, thr_pool_t *pool) {
             number_of_buckets--;
             //check if the bucket is smaller than 32 KB to execute quicksort
             if ( size*sizeof(tuple) + sizeof(uint64_t) < 32*1024) {
-                random_quicksort(relations[(i+1)%2]->tuples, base, base + size - 1);
+                random_quicksort(tuples, base, base + size - 1);
+                
                 for (ssize_t j = base; j < base + size; j++) {
 
-                    relations[i%2]->tuples[j] = relations[(i+1)%2]->tuples[j];
+                    DArray *tup_1 = (tuple *) DArray_get(relations[i%2], j);
+                    DArray *tup_2 = (tuple *) DArray_get(relations[(i + 1)%2], j);
+
+                    tup_1->key = tup_2->key;
+                    tup_1->payload = tup_2->payload;
                 }
 
             } else { // if the bucket is bigger than 32 KB , sort by the next byte
                 histogram new_h, new_p;
                 //build again histogram and psum of the next byte
-                build_histogram(relations[(i+1)%2], &new_h, i, base, size);
+                build_histogram_darray(relations[(i+1)%2], &new_h, i, base, size);
                 build_psum(&new_h, &new_p);
                 //build the reordered array of the previous bucket
-                relations[i%2] = build_reordered_array(relations[i%2], relations[(i+1)%2], &new_h, &new_p, i, base, size);
+                relations[i%2] = build_reordered_darray(relations[i%2], relations[(i+1)%2], &new_h, &new_p, i, base, size);
     
                 //push the buckets to the queue
                 for (ssize_t j = 0; j < 256 && i != 8; j++) {
@@ -237,12 +248,12 @@ int iterative_sort(relation *rel, DArray **retval, thr_pool_t *pool) {
     }
     *retval = q_to_return;
 
-    free_reordered_array(reordered);
+    DArray_destroy(reordered);
     DArray_destroy(q);
     return 0;
 
     error:
-        free_reordered_array(reordered);
+        DArray_destroy(reordered);
         DArray_destroy(q);
         return -1;
 }

@@ -17,13 +17,15 @@ typedef struct queue_node {
 } queue_node;
 
 typedef struct sort_args {
-    relation *relations[2];
+    DArray *relations[2];
     DArray *queue;
     uint32_t start;
     uint32_t end;
     int index;
 } sort_args;
 
-int iterative_sort(relation *rel, DArray **, thr_pool_t *pool);
+int iterative_sort_relation(relation *rel, DArray **, thr_pool_t *pool);
+
+int iterative_sort_darray(DArray *tuples, DArray **, thr_pool_t *pool);
 
 #endif

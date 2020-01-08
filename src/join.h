@@ -34,6 +34,6 @@ typedef struct join_arguments {
     uint32_t found;
 } join_arguments;
 
-int execute_join(relation *relR, relation *relS, DArray *queue_R, DArray *queue_S, thr_pool_t *pool);
+int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results_array, thr_pool_t *pool, DArray *queue_S, DArray *queue_R);
 
 #endif

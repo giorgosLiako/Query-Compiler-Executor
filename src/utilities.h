@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <math.h>
 #include "alloc_free.h"
 #include "dbg.h"
 #include "DArray.h"
@@ -32,5 +33,17 @@ void free_reordered_array(relation *);
 void swap_arrays(relation *, relation *);
 
 int read_relations(DArray *);
+
+exists_info relation_exists(DArray *mid_results_array, uint64_t relation, uint64_t predicate_id);
+
+ssize_t relation_exists_current(DArray *mid_results, uint64_t relation, uint64_t predicate_id);
+
+void build_histogram_darray(DArray *tuples, histogram *hist, uint8_t wanted_byte, int start, int size);
+
+DArray* build_reordered_darray(DArray *reorder_rel, DArray *prev_rel, histogram *histo, histogram *psum, uint8_t wanted_byte, int start, int size);
+
+DArray* allocate_reordered_darray(DArray *rel);
+
+void swap_darrays(DArray *r1, DArray *r2);
 
 #endif

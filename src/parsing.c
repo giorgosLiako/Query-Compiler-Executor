@@ -40,13 +40,13 @@ static void parse_predicates(char *string, query *q) {
     char current_predicate[128];
 
     uint32_t v1,v2,v3,v4;
-    char operator;
+    char *operator = MALLOC(char, 3);
     char *ptr = string;
     int advance, i = 0;
     while (sscanf(ptr, "%127[^&]%n", current_predicate, &advance) == 1) {
         ptr += advance;
 
-        if (sscanf(current_predicate, "%d.%d%c%d.%d", &v1, &v2, &operator, &v3, &v4) == 5){
+        if (sscanf(current_predicate, "%d.%d%s%d.%d", &v1, &v2, operator, &v3, &v4) == 5){
             relation_column first;
             first.relation = v1;
             first.column = v2;

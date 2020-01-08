@@ -26,6 +26,7 @@ int main(int argc, char *argv[]) {
    
     thr_pool_t *pool = thr_pool_create(MAX_THREADS);
 
+    execute_queries()
 
    for (size_t i = 0 ; i < DArray_count(query_list); i++) {
         query *qr = (query *) DArray_get(query_list, i);
