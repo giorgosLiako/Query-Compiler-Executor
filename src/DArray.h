@@ -64,7 +64,7 @@ static inline void DArray_set(DArray * array, ssize_t i, void *element) {
     check(i < array->capacity, "darray attempt to set past capacity");
     
 	if (i >= array->end) {
-        i = array->end - 1;
+        array->end = i;
 		array->count++;
 		array->end++;
 	}

@@ -9,6 +9,7 @@
 #include "DArray.h"
 #include "structs.h"
 #include "queries.h"
+#include "filter.h"
 
 DArray *parser();
 

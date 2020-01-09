@@ -1,16 +1,11 @@
 #ifndef FILTER_H
 #define FILTER_H
 
-#include <stdio.h>
-#include <stdint.h>
+#include "queries.h"
 #include "DArray.h"
-#include "structs.h"
-#include "alloc_free.h"
-#include "dbg.h"
 #include "utilities.h"
-#include "quicksort.h"
-#include "structs.h"
+#include "queries.h"
 
-int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results);
+int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results_array);
 
 #endif

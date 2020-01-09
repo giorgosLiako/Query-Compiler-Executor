@@ -40,13 +40,13 @@ static void parse_predicates(char *string, query *q) {
     char current_predicate[128];
 
     uint32_t v1,v2,v3,v4;
-    char operator;
+    char op;
     char *ptr = string;
     int advance, i = 0;
     while (sscanf(ptr, "%127[^&]%n", current_predicate, &advance) == 1) {
         ptr += advance;
 
-        if (sscanf(current_predicate, "%d.%d%c%d.%d", &v1, &v2, &operator, &v3, &v4) == 5){
+        if (sscanf(current_predicate, "%d.%d%c%d.%d", &v1, &v2, &op, &v3, &v4) == 5){
             relation_column first;
             first.relation = v1;
             first.column = v2;
@@ -55,12 +55,16 @@ static void parse_predicates(char *string, query *q) {
             second->relation = v3;
             second->column = v4;
 
+            if (v1 == v3) {
+                /*Self join*/
+                predicates[i].type = 1;
+                predicates[i].operator = SELF_JOIN;
+            }
             predicates[i].type = 0;
             predicates[i].first = first;          
-            predicates[i].second = second;
-            predicates[i++].operator = operator;
+            predicates[i++].second = second;
 
-        } else if (sscanf(current_predicate, "%u.%u%c%u", &v1, &v2, &operator, &v3) == 4) {
+        } else if (sscanf(current_predicate, "%u.%u%c%u", &v1, &v2, &op, &v3) == 4) {
             relation_column first;   
             first.relation = v1;
             first.column = v2;
@@ -71,7 +75,15 @@ static void parse_predicates(char *string, query *q) {
             predicates[i].type = 1;
             predicates[i].first = first;            
             predicates[i].second = second;
-            predicates[i++].operator = operator;
+            if (op == '<') {
+                predicates[i++].operator = L;
+            }
+            else if (op == '>') {
+                predicates[i++].operator = G;
+            }
+            else if (op == '=') {
+                predicates[i++].operator = EQ;
+            }
         }
 
         if (*ptr != '&') {
@@ -79,7 +91,6 @@ static void parse_predicates(char *string, query *q) {
         }
         ptr++;
     }
-    
 
     q->predicates = predicates;
     q->predicates_size = ampersands + 1;
@@ -124,7 +135,7 @@ DArray* parser() {
     while ((characters = getline(&line_ptr, &n, stdin)) != -1) {
         
         if (line_ptr[0] == 'F') {
-            continue;
+            break;
         }
         char relations[128], predicates[128], select[128];
 
