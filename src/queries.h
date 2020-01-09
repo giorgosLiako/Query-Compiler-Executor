@@ -9,10 +9,6 @@
 #include "DArray.h"
 #include "thr_pool.h"
 #include "structs.h"
-<<<<<<< HEAD
-=======
-#include "quicksort.h"
->>>>>>> 46ea1314f0fb6c06b875f51f16080e738969d11d
 
 #define EQ 1
 #define LEQ 2 

@@ -1,15 +1,11 @@
 #include "queries.h"
-<<<<<<< HEAD
 #include "filter.h"
 #include "join.h"
 #include "quicksort.h"
-=======
->>>>>>> 46ea1314f0fb6c06b875f51f16080e738969d11d
 
 typedef struct exec_query_args {
     query *qry;
     DArray *metadata_arr;
-<<<<<<< HEAD
     thr_pool_t *pool;
     DArray **mid_results_arrays;
     uint32_t job_id;
@@ -32,10 +28,6 @@ static void free_mid_result_arrays(DArray **mid_results_arrays, ssize_t num_arra
     FREE(mid_results_arrays);
 }
 
-=======
-} exec_query_args;
-
->>>>>>> 46ea1314f0fb6c06b875f51f16080e738969d11d
 static inline void swap_predicates(query *qry, ssize_t i, ssize_t j) {
 
     if (i == j) {
@@ -113,7 +105,6 @@ void arrange_predicates(query *qry) {
     group_matches(qry, index);
 }
 
-<<<<<<< HEAD
 static void print_sums(DArray *mid_results_array, uint32_t *relations, DArray *metadata_arr, relation_column *selects, size_t select_size) {
 
     for (size_t i = 0 ; i < select_size ; i++) {
@@ -140,8 +131,6 @@ static void print_sums(DArray *mid_results_array, uint32_t *relations, DArray *m
     printf("\n");
 }
 
-=======
->>>>>>> 46ea1314f0fb6c06b875f51f16080e738969d11d
 static void* execute_query(void *arg) {
  
     exec_query_args *args = (exec_query_args *) arg;
