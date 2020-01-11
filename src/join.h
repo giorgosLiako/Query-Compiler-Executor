@@ -11,7 +11,6 @@
 #include "utilities.h"
 #include "quicksort.h"
 #include "queries.h"
-#include "avl_tree.h"
 
 typedef struct join_result {
     DArray *no_duplicates[2];
@@ -44,6 +43,7 @@ typedef struct rel_info {
     DArray *rel;
     DArray *queue;
     uint32_t jobs_to_create;
+    bool destroy_rel;
 } rel_info; 
 
 typedef struct payloads {
@@ -52,6 +52,8 @@ typedef struct payloads {
 } payloads;
 
 join_result scan_join(DArray *relR, DArray *relS);
+
+join_result join_relations(DArray *relR, DArray *relS, DArray *queue_R, DArray *queue_S, uint32_t jobs_to_create, thr_pool_t *pool);
 
 int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results_array, thr_pool_t *pool);
 

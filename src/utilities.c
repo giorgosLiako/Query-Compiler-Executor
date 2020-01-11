@@ -52,8 +52,8 @@ DArray* build_reordered_darray(DArray *reorder_rel, DArray *prev_rel, histogram 
 }
 
 DArray* allocate_reordered_darray(DArray *rel) {
-   
-    DArray *tmp = DArray_create(sizeof(tuple), DArray_count(rel));
+    
+    DArray *tmp = DArray_create(sizeof(tuple), DArray_capacity(rel));
     check_mem(tmp);
 
     return tmp;
@@ -173,6 +173,8 @@ static void update_other_columns(ssize_t column, ssize_t approx_elements, metada
 }
 
 void update_statistics(query *qry, DArray *metadata_arr) {
+
+    printf("I GOT CALLED\n");
 
     for (ssize_t i = 0 ; i < qry->predicates_size ; i++) {
         predicate current = qry->predicates[i];

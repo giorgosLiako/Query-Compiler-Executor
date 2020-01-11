@@ -42,9 +42,6 @@ typedef struct mid_result {
     uint64_t relation;
     uint64_t predicate_id;
     int32_t last_column_sorted;
-    int32_t last_column_accessed;
-    DArray *queue;
-    uint32_t jobs_created; 
     DArray* tuples;
 } mid_result;
 

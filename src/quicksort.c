@@ -15,9 +15,9 @@ static void swap(DArray *tuples, ssize_t i, ssize_t j) {
     tuple *tup_i = (tuple *) DArray_get(tuples, i);
     tuple *tup_j = (tuple *) DArray_get(tuples, j);
 
-    tuple *tmp = tup_i;
-    tup_i = tup_j;
-    tup_j = tmp;
+    tuple tmp = *tup_i;
+    *tup_i = *tup_j;
+    *tup_j = tmp;
 }
 
 //function to define the partition
@@ -187,7 +187,7 @@ int iterative_sort(DArray *tuples, DArray **retval, uint32_t *jobs_created, thr_
             number_of_buckets--;
             //check if the bucket is smaller than 32 KB to execute quicksort
             if ( size*sizeof(tuple) + sizeof(uint64_t) < 32*1024) {
-                random_quicksort(tuples, base, base + size - 1);
+                random_quicksort(relations[(i+1)%2], base, base + size - 1);
                 
                 for (ssize_t j = base; j < base + size; j++) {
 
@@ -251,8 +251,10 @@ int iterative_sort(DArray *tuples, DArray **retval, uint32_t *jobs_created, thr_
             sort_job_args[j] = argm;
 
             thr_pool_queue(pool, sort_job, (void *) &sort_job_args[j]);
-        }
-        thr_pool_barrier(pool);        
+        }       
+        thr_pool_barrier(pool); 
+
+        FREE(sort_job_args);
     }
     else {
         *jobs_created = 0;

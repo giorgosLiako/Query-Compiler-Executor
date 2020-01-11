@@ -1,29 +1,17 @@
 #include "join.h"
 #include "join_utilities.h"
+#include "hashmap.h"
 
 /*
 (TODO) join enumeration
-(TODO) DEEEEBUUUUGGGGIIIINGGG
 */
-
-int avl_cmp(const void *lhs, const void *rhs) {
-    const payloads pay_lhs = *(const payloads *) lhs;
-    const payloads pay_rhs = *(const payloads *) rhs;
-
-    if (pay_lhs.payload_R == pay_rhs.payload_R && pay_rhs.payload_S == pay_lhs.payload_S) {
-        return 0;
-    }
-    else {
-        return 1;
-    }
-}
 
 join_result scan_join(DArray *relR, DArray *relS) {
 
     join_result res;
 
-    DArray *results_r = DArray_create(sizeof(uint64_t), 2000);
-    DArray *results_s = DArray_create(sizeof(uint64_t), 2000);
+    DArray *results_r = DArray_create(sizeof(tuple), 2000);
+    DArray *results_s = DArray_create(sizeof(tuple), 2000);
 
     uint32_t iterations = DArray_count(relR) < DArray_count(relS) ? DArray_count(relR) : DArray_count(relS);
 
@@ -43,6 +31,31 @@ join_result scan_join(DArray *relR, DArray *relS) {
 
 }
 
+int32_t hashmap_compare(const void *lhs, const void *rhs) {
+
+    const payloads pay_lhs = *(const payloads *) lhs;
+    const payloads pay_rhs = *(const payloads *) rhs;
+
+    if (pay_lhs.payload_R == pay_rhs.payload_R && pay_rhs.payload_S == pay_lhs.payload_S) {
+        return 0;
+    } 
+    else {
+        return 1;
+    }
+}
+
+uint32_t hashmap_hash(void *key) {
+
+    payloads pay_l = *(payloads *) key;
+    uint32_t u_key = ((pay_l.payload_R & 0xFFFF) << 16) | (pay_l.payload_S & 0xFFFF);
+    u_key = (u_key ^ 61) ^ (u_key >> 16);
+    u_key = u_key + (u_key << 3);
+    u_key = u_key ^ (u_key >> 4);
+    u_key = u_key * 0x27d4eb2d;
+    u_key = u_key ^ (u_key >> 15);
+    return u_key;
+}
+
 join_result join_relations_single_threaded(DArray *relR, DArray *relS) {
 
     join_result join_res;
@@ -55,7 +68,7 @@ join_result join_relations_single_threaded(DArray *relR, DArray *relS) {
     size_t pr = 0; 
     size_t s_start = 0; 
 
-    AVL_tree *tree = AVL_tree_create(sizeof(payloads), avl_cmp);
+    Hashmap *map = Hashmap_create(sizeof(payloads), sizeof(payloads), hashmap_compare, hashmap_hash);
 
     while (pr < DArray_count(relR) && s_start < DArray_count(relS)) {
 
@@ -78,11 +91,11 @@ join_result join_relations_single_threaded(DArray *relR, DArray *relS) {
                 pay_l.payload_R = tup_pr->payload;
                 pay_l.payload_S = tup_ps->payload;
                 
-                if (AVL_tree_search(tree, &pay_l) == NULL) {
+                if (Hashmap_get(map, &pay_l) == NULL) {
                     //If we didn't push that entry before, push it now
                     DArray_push(no_duplicates_r, &tup_pr->payload);
                     DArray_push(no_duplicates_s, &tup_ps->payload);
-                    AVL_tree_insert(tree, &pay_l);
+                    Hashmap_set(map, &pay_l, &pay_l);
                 }
                 DArray_push(results_r, tup_pr);
                 DArray_push(results_s, tup_ps);
@@ -99,7 +112,7 @@ join_result join_relations_single_threaded(DArray *relR, DArray *relS) {
     join_res.no_duplicates[0] = no_duplicates_r;
     join_res.no_duplicates[1] = no_duplicates_s;
     
-    AVL_tree_destroy(tree);
+    Hashmap_destroy(map);
     
     return join_res;
 }
@@ -112,16 +125,16 @@ void *join_job(void *args) {
 
     join_result join_res;
 
-    DArray *results_r = DArray_create(sizeof(tuple), 2000);
+    DArray *results_r = DArray_create(sizeof(tuple), 200);
     check_mem(results_r);
-    DArray *results_s = DArray_create(sizeof(tuple), 2000);
+    DArray *results_s = DArray_create(sizeof(tuple), 200);
     check_mem(results_s);
-    DArray *no_duplicates_r = DArray_create(sizeof(uint64_t), 2000);
+    DArray *no_duplicates_r = DArray_create(sizeof(uint64_t), 200);
     check_mem(no_duplicates_r); 
-    DArray *no_duplicates_s = DArray_create(sizeof(uint64_t), 2000);
+    DArray *no_duplicates_s = DArray_create(sizeof(uint64_t), 200);
     check_mem(no_duplicates_s);
 
-    AVL_tree *tree = AVL_tree_create(sizeof(payloads), avl_cmp);
+    Hashmap *map = Hashmap_create(sizeof(payloads), sizeof(payloads), hashmap_compare, hashmap_hash);
 
     for (ssize_t i = argm->start ; i < argm->end ; i++) {
         queue_node *qnode_R = (queue_node *) DArray_get(argm->queue_R, argm->indices_to_check[0][i]);
@@ -154,11 +167,11 @@ void *join_job(void *args) {
                     pay_l.payload_R = tup_pr->payload;
                     pay_l.payload_S = tup_ps->payload;
                     
-                    if (AVL_tree_search(tree, &pay_l) == NULL) {
+                    if (Hashmap_get(map, &pay_l) == NULL) {
                         //If we didn't push that entry before, push it now
                         check(DArray_push(no_duplicates_r, &tup_pr->payload) == 0, "Failed to push to array");
                         check(DArray_push(no_duplicates_s, &tup_ps->payload) == 0, "Failed to push to array");
-                        AVL_tree_insert(tree, &pay_l);
+                        Hashmap_set(map, &pay_l, &pay_l);
                     }
                     tuple to_push_r = *tup_pr;
                     tuple to_push_s = *tup_ps;
@@ -181,7 +194,7 @@ void *join_job(void *args) {
 
     argm->join_res = join_res;
 
-    AVL_tree_destroy(tree);
+    Hashmap_destroy(map);
     
     error:
         return NULL;
@@ -189,7 +202,7 @@ void *join_job(void *args) {
 
 
 join_result join_relations(DArray *relR, DArray *relS, DArray *queue_R, DArray *queue_S, uint32_t jobs_to_create, thr_pool_t *pool) {
-	  
+
 	uint32_t common_bytes = 0;
     uint16_t **indices_to_check = MALLOC(uint16_t *, 2);
     indices_to_check[0] = MALLOC(uint16_t, 256);
@@ -256,8 +269,6 @@ join_result join_relations(DArray *relR, DArray *relS, DArray *queue_R, DArray *
         DArray_destroy(no_duplicates_s);
     }
 
-    DArray_destroy(params[0].queue_R);
-    DArray_destroy(params[0].queue_S);
     FREE(indices_to_check[0]);
     FREE(indices_to_check[1]);
     FREE(indices_to_check);
@@ -270,7 +281,6 @@ join_result join_relations(DArray *relR, DArray *relS, DArray *queue_R, DArray *
     
     return res;
 }
-
 
 int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results_array, thr_pool_t *pool) {
 
@@ -325,6 +335,18 @@ int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DAr
 
     update_mid_results(mid_results_array, metadata_arr, info, rel);
 
+    if (rel[0]->destroy_rel) {
+        DArray_destroy(rel[0]->rel);
+    }
+    if (rel[1]->destroy_rel) {
+        DArray_destroy(rel[1]->rel);
+    }
+    if (rel[0]->queue) {
+        DArray_destroy(rel[0]->queue);
+    }
+    if (rel[1]->queue) {
+        DArray_destroy(rel[1]->queue);
+    }
     FREE(rel[0]);
     FREE(rel[1]);
 

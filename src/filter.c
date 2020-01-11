@@ -16,7 +16,7 @@ static void apply_filter(int filter_type, bool rel_exists, mid_result *mid_res, 
             }
             else {
                 if (((tuple *) DArray_get(rel_tuples, i))->key == number) {
-                    DArray_push(mid_res->tuples, &(*((tuple *) DArray_get(rel_tuples, i))));
+                    DArray_push(mid_res->tuples, DArray_get(rel_tuples, i));
                 }
             }
         }
@@ -30,7 +30,7 @@ static void apply_filter(int filter_type, bool rel_exists, mid_result *mid_res, 
             }
             else {
                 if (((tuple *) DArray_get(rel_tuples, i))->key <= number) {
-                    DArray_push(mid_res->tuples, &(*((tuple *) DArray_get(rel_tuples, i))));
+                    DArray_push(mid_res->tuples, DArray_get(rel_tuples, i));
                 }
             }
         }
@@ -44,7 +44,7 @@ static void apply_filter(int filter_type, bool rel_exists, mid_result *mid_res, 
             }
             else {
                 if (((tuple *) DArray_get(rel_tuples, i))->key >= number) {
-                    DArray_push(mid_res->tuples, &(*((tuple *) DArray_get(rel_tuples, i))));
+                    DArray_push(mid_res->tuples, DArray_get(rel_tuples, i));
                 }
             }
         }
@@ -58,7 +58,7 @@ static void apply_filter(int filter_type, bool rel_exists, mid_result *mid_res, 
             }
             else {
                 if (((tuple *) DArray_get(rel_tuples, i))->key < number) {
-                    DArray_push(mid_res->tuples, &(*((tuple *) DArray_get(rel_tuples, i))));
+                    DArray_push(mid_res->tuples, DArray_get(rel_tuples, i));
                 }
             }
         }
@@ -72,7 +72,7 @@ static void apply_filter(int filter_type, bool rel_exists, mid_result *mid_res, 
             }
             else {
                 if (((tuple *) DArray_get(rel_tuples, i))->key > number) {
-                    DArray_push(mid_res->tuples, &(*((tuple *) DArray_get(rel_tuples, i))));
+                    DArray_push(mid_res->tuples, DArray_get(rel_tuples, i));
                 }
             }
         }
@@ -100,7 +100,6 @@ int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, D
     if (exists.index != -1)  {
         DArray *mid_results = *(DArray **) DArray_get(mid_results_array, exists.mid_result);
         current = (mid_result *) DArray_get(mid_results, exists.index);
-        current->last_column_accessed = pred->first.column;
         
         if (pred->operator != SELF_JOIN) {
             apply_filter(pred->operator, 1, current, rel->tuples, *number);
@@ -120,7 +119,6 @@ int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, D
         res.relation = relations[pred->first.relation];
         res.predicate_id = pred->first.relation;
         res.last_column_sorted = -1;
-        res.last_column_accessed = pred->first.column;
         
         if (pred->operator != SELF_JOIN) {
             res.tuples = DArray_create(sizeof(tuple), 2000);
