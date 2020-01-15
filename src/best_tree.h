@@ -3,13 +3,17 @@
 typedef struct tree {
     int type;
     int rel;
+    int col;
+    int f;
+    int min;
+    int max;
     struct tree *right;
     struct tree *left;
 } tree;
 
 
 typedef struct q_node { 
-    q_node *next; 
+    struct q_node *next; 
     char *name; 
     tree *tree; 
 } q_node;
@@ -25,9 +29,6 @@ unsigned hash(char *s) {
     return hashval % HASHSIZE;
 }
 
-tree *BestTree(char *s) {
-    return find(s)->tree;
-}
 
 
 q_node *find(char *s) {
@@ -35,6 +36,10 @@ q_node *find(char *s) {
     for (np = hashtab[hash(s)]; np != NULL; np = np->next)
         if (strcmp(s, np->name) == 0) return np;
     return NULL; 
+}
+
+tree *BestTree(char *s) {
+    return find(s)->tree;
 }
 
 tree *create(tree *t) {
