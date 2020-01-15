@@ -4,9 +4,8 @@ typedef struct tree {
     int type;
     int rel;
     int col;
-    int f;
-    int min;
-    int max;
+    int size;
+    statistics *stat;
     struct tree *right;
     struct tree *left;
 } tree;

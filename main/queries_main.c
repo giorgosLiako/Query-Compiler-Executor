@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
         if (DArray_count(query_list) == 0) {
             break;  
         }
-        
+        printf("Executing\n");
         execute_queries(query_list, metadata_arr, pool);
         
         free_query_list(query_list);

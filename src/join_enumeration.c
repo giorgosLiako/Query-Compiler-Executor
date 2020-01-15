@@ -6,11 +6,8 @@
 #include <stdarg.h>
 #include "set.h"
 
-
-#define RightDeepOnly 1
-#define LeftDeepOnly 0
-
 int **graph;
+statistics **stats;
 
 //works for numbers smaller than 10
 char *to_string(int rel) {
@@ -72,7 +69,6 @@ tree *create_join_tree(tree *t, int rel) {
     best_tree->left = t;
     best_tree->right = to_tree(rel);
     
-    
     return best_tree;
 }
 
@@ -100,123 +96,193 @@ int connected(char *str, int rel) {
     return 0;
 }
 
-void pseudo_filter(){
 
-}
-
-DArray *get_columns(int rel_a, int rel_b, predicate *predicates, int pred_size) {
-    DArray *cols = DArray_create(sizeof(int), 2);
+void get_columns(int rel_a, int rel_b, predicate *predicates, int pred_size, DArray *cols) {
+    
     for (size_t i = 0; i < pred_size; i++) {
         if (predicates[i].first.relation == rel_a && ((relation_column*)predicates[i].second)->relation == rel_b){
-            DArray_push(cols, predicates[i].first.column);
-            DArray_push(cols, ((relation_column*)predicates[i].second)->column);
+            DArray_push(cols, &predicates[i].first.column);
+            DArray_push(cols, &((relation_column*)predicates[i].second)->column);
         } else if (predicates[i].first.relation == rel_b && ((relation_column*)predicates[i].second)->relation == rel_a) {
-            DArray_push(cols, ((relation_column*)predicates[i].second)->column);
-            DArray_push(cols, predicates[i].first.column);
+            DArray_push(cols, &((relation_column*)predicates[i].second)->column);
+            DArray_push(cols, &predicates[i].first.column);
         }
     }
-    return cols;
 }
 
-static void update_non_eq(uint32_t k1, uint32_t k2, relation *rel) {
-    
-    if (k1 < rel->stats->min_value) {
-        k1 = rel->stats->min_value;
+void get_column_tree(tree *t, int rel, predicate *predicates, int pred_size, DArray *res) {
+    if (t->left->type == 0){
+        get_column_tree(t->left->left, rel, predicates, pred_size, res);
+        get_columns(t->left->right->rel, rel, predicates, pred_size, res);
+    } else {
+        get_columns(t->left->rel, rel, predicates, pred_size, res);
     }
-    if (k2 > rel->stats->max_value) {
-        k2 = rel->stats->max_value;
-    }
-
-    if (rel->stats->max_value - rel->stats->min_value > 0) {
-        rel->stats->distinct_values *= (k2 - k1) / (rel->stats->max_value - rel->stats->min_value);
-        rel->stats->approx_elements *= (k2 - k1) / (rel->stats->max_value - rel->stats->min_value);
-    }
-    rel->stats->min_value = k1;
-    rel->stats->max_value = k2;
 }
 
-int calculate_statistics(metadata *md_a, metadata *md_b, int col_a, int col_b, int *min, int *max) {
-    relation *a = md_a->data[col_a], *b = md_b->data[col_b];
-
+void calculate_statistics(int rel_a, int rel_b, int col_a, int col_b, statistics *stat) {
     
-    if (a->stats->min_value > b->stats->min_value) *min = a->stats->min_value;
-    else *min = b->stats->min_value;
+    if (stats[rel_a][col_a].min_value > stats[rel_b][col_b].min_value) stat->min_value = stats[rel_a][col_a].min_value;
+    else stat->min_value = stats[rel_b][col_b].min_value;
 
-    if (a->stats->max_value > b->stats->max_value) *max = a->stats->max_value;
-    else *max = b->stats->max_value;
+    if (stats[rel_a][col_a].max_value > stats[rel_b][col_b].max_value) stat->max_value = stats[rel_a][col_a].max_value;
+    else stat->max_value = stats[rel_b][col_b].max_value;
 
     int f_a, f_b;
 
-    f_a = ((*max - *min)/(a->stats->max_value - a->stats->min_value)) * (a->stats->approx_elements);
-    f_b = ((*max - *min)/(b->stats->max_value - b->stats->min_value)) * (b->stats->approx_elements);
+    f_a = ((stat->max_value - stat->min_value) * stats[rel_a][col_a].approx_elements)/(stats[rel_a][col_a].max_value - stats[rel_a][col_a].min_value);
+    f_b = ((stat->max_value - stat->min_value) * stats[rel_b][col_b].approx_elements)/(stats[rel_b][col_b].max_value - stats[rel_b][col_b].min_value);
 
-    int n = *max - *min + 1;
-    return (f_a*f_b)/n;
+    int n = stat->max_value - stat->min_value + 1;
+    stat->approx_elements = (f_a*f_b)/n;
 
 }
 
-int set_statistics(DArray *meta, int rel_a, int rel_b, predicate *preds, int pred_size, int *c_a, int *c_b, int *b_max, int *b_min){
-    DArray *cols = get_columns(rel_a, rel_b, preds, pred_size);
+int set_statistics(DArray *meta, tree *t, predicate *preds, int pred_size){
+    int rel_a = t->left->rel, rel_b = t->right->rel;
+    DArray *cols = DArray_create(sizeof(int), 2);
+    get_columns(rel_a, rel_b, preds, pred_size, cols);
     metadata *md_a = DArray_get(meta, rel_a), *md_b = DArray_get(meta, rel_b);
-    int best = -1, best_c, best_min, best_max, min, max;
+    int best = -1;
+    statistics stat, best_stat;
     for (size_t i = 0; i < DArray_count(cols);) {
         int col_a = *((int*) DArray_get(cols, i++)), col_b = *((int*) DArray_get(cols, i++));
-        int cost = calculate_statistics(md_a, md_b, col_a, col_b, &min, &max);
+        calculate_statistics(rel_a, rel_b, col_a, col_b, &stat);
         if (best == -1){
             best = i - 2;
-            best_c = cost;
-            best_max = max;
-            best_min = min;
-        } else if (best_c > cost) {
+            best_stat = stat;
+        } else if (best_stat.approx_elements > stat.approx_elements) {
             best = i - 2;
-            best_c = cost; 
-            best_max = max;
-            best_min = min;
-            
+            best_stat = stat;
         }
     }
-    *b_max = best_max;
-    *b_min = best_min;
-    *c_a = *((int*) DArray_get(cols, best));
-    *c_b = *((int*) DArray_get(cols, best+1));
-    return best_c;
 
-}
+    
+    t->left->col = *((int*) DArray_get(cols, best));
+    t->right->col = *((int*) DArray_get(cols, best+1));
+    stats[rel_a][t->left->col] = best_stat;
+    stats[rel_b][t->right->col] = best_stat;
 
-int set_statistics_nleaf(){
+    
 
-}
-
-
-void dfs(tree *t, int *relations, predicate *predicates, int pred_size, int *res, DArray *meta) {
-    if (t->left->left != NULL) dfs(t->left, relations, predicates, pred_size, res, meta);
-    //TODO: calculate the f value
-    if (t->left->left == NULL) {
-        int rel_a = t->left->rel;
-        int rel_b = t->left->right;
-        int col_a, col_b, min, max;
-        int f = set_statistics(meta, rel_a, rel_b, predicates, pred_size, &col_a, &col_b, &max, &min);
-        t->f = f;
-        t->max = max;
-        t->min = min;
-        t->left->col = col_a;
-        t->right->col = col_b;
-    } else {
-        set_statistics_nleaf();
+    for (size_t i = 0; i < md_a->columns; i++) {
+        if (i != t->left->col) stats[rel_a][i].approx_elements = best_stat.approx_elements;
     }
-    //res += t->left->rel
+    for (size_t i = 0; i < md_b->columns; i++) {
+        if (i != t->right->col) stats[rel_b][i].approx_elements = best_stat.approx_elements;
+    }
+    
+    
+    return best_stat.approx_elements;
+
 }
 
-int cost(tree *t, int *relations, predicate *predicates, int pred_size, DArray *meta) {
+int set_statistics_nleaf(DArray *relations, DArray *meta, tree *t, predicate *preds, int pred_size){
+    int best_rel_a = -1, best_rel_b = -1;
+    int best_col_a, best_col_b;
+    statistics best_stat_all;
+    
+    for (size_t i = 0; i < DArray_count(relations); i++) {
+        int rel_a = *((int*) DArray_get(relations, i));
+        int rel_b = t->right->rel;
+        
+        DArray *cols = DArray_create(sizeof(int), 2);
+        get_columns(rel_a, rel_b, preds, pred_size, cols);
+                
+        int t_best_col_a = -1;
+        int t_best_col_b;
+        statistics stat, best_stat;
+        for (size_t j = 0; j < DArray_count(cols);) {
+            int col_a = *((int*) DArray_get(cols, j++)), col_b = *((int*) DArray_get(cols, j++));
+            calculate_statistics(rel_a, rel_b, col_a, col_b, &stat);
+            
+            if (t_best_col_a == -1){
+                t_best_col_a = col_a;
+                t_best_col_b = col_b;
+                best_stat = stat;
+            } else if (best_stat.approx_elements > stat.approx_elements) {
+                t_best_col_a = col_a;
+                t_best_col_b = col_b;
+                best_stat = stat;
+            }
+
+        }
+        if (best_rel_a == -1) {
+            best_rel_a = rel_a;
+            best_rel_b = rel_b;
+            best_col_a = t_best_col_a;
+            best_col_b = t_best_col_b;
+            best_stat_all = stat;
+        } else if (best_stat_all.approx_elements > best_stat.approx_elements) {
+            best_rel_a = rel_a;
+            best_rel_b = rel_b;
+            best_col_a = t_best_col_a;
+            best_col_b = t_best_col_b;
+            best_stat_all = stat;
+        }   
+    }
+
+    t->left->rel = best_rel_a;
+    t->left->col = best_col_a;
+    t->right->col = best_col_b;
+    stats[best_rel_a][best_col_a] = best_stat_all;
+    stats[best_rel_b][best_col_b] = best_stat_all;
+
+    for (size_t i = 0; i < DArray_count(relations); i++) {
+        metadata *md_a = DArray_get(meta, i);
+        for (size_t j = 0; j < md_a->columns; j++) {
+            if (i != t->left->rel && j != t->left->col) stats[i][j].approx_elements = best_stat_all.approx_elements;
+        }
+
+    }
+    
+
+
+    metadata *md_b = DArray_get(meta, best_rel_b);
+    for (size_t i = 0; i < md_b->columns; i++) {
+        if (i != t->right->col) stats[best_rel_b][i].approx_elements = best_stat_all.approx_elements;
+    }
+    
+    
+    return best_stat_all.approx_elements;
+
+    
+}
+
+void dfs(tree *t, DArray *relations, predicate *predicates, int pred_size, int *res, DArray *meta) {
+    if (t->left->left != NULL) dfs(t->left, relations, predicates, pred_size, res, meta);
+    
+    if (t->left->left == NULL) {
+        res += set_statistics(meta, t->left, predicates, pred_size);
+        DArray_push(relations, &t->left->rel);
+        DArray_push(relations, &t->right->rel);
+    } else {
+        res += set_statistics_nleaf(relations, meta, t->left, predicates, pred_size);
+        DArray_push(relations, &t->right->rel);
+    }
+}
+
+int cost(tree *t, predicate *predicates, int pred_size, DArray *meta) {
     int res = 0;
+    DArray *relations = DArray_create(sizeof(int), 2);
     dfs(t, relations, predicates, pred_size, &res, meta);
     return res;
 }
 
+void set_up_statistics(int rel_size, DArray *meta){
+    stats = (statistics**) malloc(rel_size*sizeof(statistics*));
+    for (size_t i = 0; i < rel_size; i++) {
+        metadata *md = (metadata*) DArray_get(meta, i);
+        stats[i] = (statistics*) malloc(md->columns*sizeof(statistics));
+        for (size_t j = 0; j < md->columns; j++) {
+            stats[i][j] = *(md->data[j]->stats);
+        }
+    }
+}
 
 tree *dp_linear(int *relations, int rel_size, predicate *predicates, int pred_size, DArray *meta){
     queue *set = new_queue();
     predicate_graph(predicates, pred_size, rel_size);
+    set_up_statistics(rel_size, meta);
 
     for (size_t i = 0; i < rel_size; i++) {
         char* n_set = to_string(i);
@@ -237,7 +303,7 @@ tree *dp_linear(int *relations, int rel_size, predicate *predicates, int pred_si
                     char *new_set = append_string(k, old_set);
 
                     //TODO cost
-                    if (BestTree(new_set) == NULL || cost(BestTree(new_set), relations, predicates, pred_size, meta) > cost(curr_tree, relations, predicates, pred_size, meta) ){
+                    if (BestTree(new_set) == NULL || cost(BestTree(new_set), predicates, pred_size, meta) > cost(curr_tree, predicates, pred_size, meta) ){
                         if (BestTree(new_set) == NULL) push(set, copy_string(new_set));
                         BestTree_set(new_set, curr_tree);
                     } 
