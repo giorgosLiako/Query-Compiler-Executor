@@ -12,7 +12,7 @@
 #include "../src/structs.h"
 #include "../src/thr_pool.h"
 
-#define MAX_THREADS 4
+#define MAX_THREADS 8
 
 static void free_query_list(DArray *query_list) {
    
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
         if (DArray_count(query_list) == 0) {
             break;  
         }
-        printf("Executing\n");
+        
         execute_queries(query_list, metadata_arr, pool);
         
         free_query_list(query_list);

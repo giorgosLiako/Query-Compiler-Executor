@@ -682,9 +682,7 @@ void update_mid_results(DArray *mid_results_array, DArray *metadata_arr, join_in
             exit(EXIT_FAILURE);
         }
        
-        DArray *mid_results = *(DArray **) DArray_get(mid_results_array, exists.mid_result);
-        mid_result *update = (mid_result *) DArray_get(mid_results, exists.index);
-        update->tuples = tuples_R;
+        fix_all_mid_results(&info, exists, mid_results_array, metadata_arr, &tmp_R, 0);
 
         exists = relation_exists(mid_results_array, info.relS , info.predS_id);
         if (exists.index == -1) {
@@ -692,9 +690,7 @@ void update_mid_results(DArray *mid_results_array, DArray *metadata_arr, join_in
             exit(EXIT_FAILURE);
         }
         
-        mid_results = *(DArray **) DArray_get(mid_results_array, exists.mid_result);
-        update = (mid_result *) DArray_get(mid_results, exists.index);
-        update->tuples = tuples_S;
+       fix_all_mid_results(&info, exists, mid_results_array, metadata_arr, &tmp_S, 1);
 	}
 
 	DArray_destroy(info.join_res.no_duplicates[0]);

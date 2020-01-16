@@ -98,7 +98,7 @@ static ssize_t group_filters(query * qry) {
     return index;         
 }
 
-void arrange_predicates(query *qry) {
+void arrange_predicates(query *qry, DArray *meta) {
 
     ssize_t index = group_filters(qry);
 
@@ -209,7 +209,7 @@ void print_select(relation_column* r_c, size_t size){
 
             query *tmp_data = (query*) DArray_get(q_list, i);
 
-            arrange_predicates(tmp_data);
+            arrange_predicates(tmp_data, metadata_arr);
 
             execute_query(tmp_data , metadata_arr, pool);
         }
@@ -221,7 +221,8 @@ void print_select(relation_column* r_c, size_t size){
         exec_query_args *args = (exec_query_args *) arg;
 
         query *qry = args->qry;
-        arrange_predicates(qry);
+        DArray *temp = NULL;
+        arrange_predicates(qry, temp);
 
         DArray *mid_results_array = DArray_create(sizeof(DArray *), 2);
 
