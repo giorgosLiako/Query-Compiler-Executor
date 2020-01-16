@@ -2,9 +2,6 @@
 #include "join_utilities.h"
 #include "hashmap.h"
 
-/*
-(TODO) join enumeration
-*/
 
 join_result scan_join(DArray *relR, DArray *relS) {
 
@@ -12,6 +9,8 @@ join_result scan_join(DArray *relR, DArray *relS) {
 
     DArray *results_r = DArray_create(sizeof(tuple), 2000);
     DArray *results_s = DArray_create(sizeof(tuple), 2000);
+    DArray *no_duplicates_r = DArray_create(sizeof(uint64_t), 2000);
+    DArray *no_duplicates_s = DArray_create(sizeof(uint64_t), 2000); 
 
     uint32_t iterations = DArray_count(relR) < DArray_count(relS) ? DArray_count(relR) : DArray_count(relS);
 
@@ -21,11 +20,15 @@ join_result scan_join(DArray *relR, DArray *relS) {
         if (tup_R->key == tup_S->key) {
             DArray_push(results_r, tup_R);
             DArray_push(results_s, tup_S);
+            DArray_push(no_duplicates_r, &tup_R->payload);
+            DArray_push(no_duplicates_s, &tup_S->payload);
         }
     }
 
     res.results[0] = results_r;
     res.results[1] = results_s;
+    res.no_duplicates[0] = no_duplicates_r;
+    res.no_duplicates[1] = no_duplicates_s;
 
     return res;
 

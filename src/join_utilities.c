@@ -294,17 +294,6 @@ int sort_relations(predicate *pred, uint32_t *relations, DArray *metadata_arr, D
 			rel[1]->destroy_rel = false;
 		}
 		else {
-			/*DArray *tmp_tuples = ((metadata *) DArray_get(metadata_arr, rhs_rel))->data[rhs_col]->tuples;
-			
-			rel[1]->rel = DArray_create(sizeof(tuple), DArray_count(mid_res_S->tuples) + 1);
-			for (ssize_t i = 0 ; i < DArray_count(mid_res_S->tuples) ; i++) {
-				uint64_t payload = ((tuple *) DArray_get(mid_res_S->tuples, i))->payload;
-				tuple to_push; 
-				to_push.key = ((tuple *) DArray_get(tmp_tuples, payload))->key;
-				to_push.payload = payload;
-				DArray_push(rel[1]->rel, &to_push);
-			}
-			rel[1]->destroy_rel = true;*/
 			allocate_relation_mid_results(mid_res_S, metadata_arr, rhs_rel, rhs_col, rel, 1);
 		}
 
@@ -509,6 +498,7 @@ static void single_threaded_sort(DArray *tuples) {
 static DArray* join_payloads(DArray *driver, DArray *last, DArray *edit, DArray *tuples) {
 	
 	DArray *relR_tuples = DArray_create(sizeof(tuple), DArray_count(last) + 1);
+
 	for (size_t i = 0 ; i < DArray_count(last) ; i++) {
 		tuple *tup_last = (tuple *) DArray_get(last, i);
 		tuple *tup_edit = (tuple *) DArray_get(edit, i);
@@ -588,6 +578,7 @@ static void fix_all_mid_results(join_info *info, exists_info exists, DArray *mid
 	mid_result *destroy = (mid_result *) DArray_get(mid_results, exists.index);
 	DArray_destroy(destroy->tuples);
 	DArray_set(mid_results, exists.index, tmp);
+	
 }
 
 void update_mid_results(DArray *mid_results_array, DArray *metadata_arr, join_info info, rel_info *rel[2]) {
@@ -689,8 +680,11 @@ void update_mid_results(DArray *mid_results_array, DArray *metadata_arr, join_in
             log_err("Something went really wrong");
             exit(EXIT_FAILURE);
         }
-        
-       fix_all_mid_results(&info, exists, mid_results_array, metadata_arr, &tmp_S, 1);
+
+		DArray *mid_results = *(DArray **) DArray_get(mid_results_array, exists.mid_result);
+		mid_result *destroy = (mid_result *) DArray_get(mid_results, exists.index);
+		DArray_destroy(destroy->tuples);
+		DArray_set(mid_results, exists.index, &tmp_S);
 	}
 
 	DArray_destroy(info.join_res.no_duplicates[0]);
