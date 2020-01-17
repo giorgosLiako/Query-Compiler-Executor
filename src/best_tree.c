@@ -8,6 +8,7 @@ static q_node *hashtab[HASHSIZE];
 
 
 unsigned hash(char *s) {
+    printf("%s \n", s);
     unsigned hashval;
     for (hashval = 0; *s != '\0'; s++)
       hashval = *s + 31 * hashval;

@@ -459,6 +459,7 @@ int connected(char *str, int rel) {
 // }
 
 int cost(tree *t){
+    printf("cost ->%d \n", t->stats[t->left->rel][t->left->col].approx_elements);
     return t->stats[t->left->rel][t->left->col].approx_elements;
 }
 
@@ -494,7 +495,7 @@ predicate *dp_linear(int rel_size, predicate *predicates, int pred_size,const DA
         for (size_t j = 0; j < set_size; j++) {
             char* old_set = pop(set);
 
-            for (size_t k = j + 1; k < rel_size; k++) {
+            for (size_t k = 0; k < rel_size; k++) {
                 printf("old set %s new relation %d\n", old_set, k);
                 if (!in_string(old_set, k) && connected(old_set, k)) {
                     tree *curr_tree = create_join_tree(BestTree(old_set), k, meta);
