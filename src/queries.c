@@ -2,6 +2,7 @@
 #include "filter.h"
 #include "join.h"
 #include "quicksort.h"
+#include "join_enumeration.h"
 
 typedef struct exec_query_args {
     query *qry;
@@ -101,8 +102,19 @@ static ssize_t group_filters(query * qry) {
 void arrange_predicates(query *qry, DArray *meta) {
 
     ssize_t index = group_filters(qry);
+    
+    predicate *res = dp_linear(qry->relations_size, &(qry->predicates[index]), qry->predicates_size - index, meta);
 
-    group_matches(qry, index);
+    for (size_t i = index; i < qry->predicates_size; i++)
+    {
+        qry->predicates[i] = res[i-index];
+    }
+       print_predicates(qry->predicates, qry->predicates_size);
+    
+    
+    
+
+    //group_matches(qry, index);
 }
 
 static void print_sums(DArray *mid_results_array, uint32_t *relations, DArray *metadata_arr, relation_column *selects, size_t select_size) {
@@ -146,12 +158,10 @@ void print_predicates(predicate* predicates, size_t size) {
     for (size_t i = 0; i < size; i++) {
         if (predicates[i].type == 0) {
             relation_column *temp = (relation_column*) predicates[i].second;
-            printf("\t%lu.%lu %c %lu.%lu\n", predicates[i].first.relation, predicates[i].first.column, predicates[i].operator
-                    , temp->relation, temp->column);
+            printf("\t%lu.%lu  %lu.%lu\n", predicates[i].first.relation, predicates[i].first.column, temp->relation, temp->column);
         } else if (predicates[i].type == 1) {
             int *temp = (int*) predicates[i].second;
-            printf("\t%lu.%lu %c %d\n", predicates[i].first.relation, predicates[i].first.column, predicates[i].operator
-                    , *temp);
+            printf("\t%lu.%lu  %d\n", predicates[i].first.relation, predicates[i].first.column, *temp);
         }
     }
 }
@@ -166,13 +176,13 @@ void print_select(relation_column* r_c, size_t size){
 }
 
 
-#ifndef MULTITHREADING
+#ifdef MULTITHREADING
     static int execute_query(query* q , DArray* metadata_arr, thr_pool_t *pool) {
 
         DArray *mid_results_array = DArray_create(sizeof(DArray *), 2);
 
-        print_predicates(q->predicates, q->predicates_size);
-        print_select(q->selects, q->select_size);
+        //print_predicates(q->predicates, q->predicates_size);
+        //print_select(q->selects, q->select_size);
     
         for (size_t i = 0 ; i < (size_t)q->predicates_size ; i++) {
 
@@ -203,7 +213,6 @@ void print_select(relation_column* r_c, size_t size){
 
 
     void execute_queries(DArray *q_list, DArray *metadata_arr, thr_pool_t *pool) {
-
 
         for (size_t i = 0; i < DArray_count(q_list); i++) {
 
@@ -240,6 +249,7 @@ void print_select(relation_column* r_c, size_t size){
     }
 
     void execute_queries(DArray *q_list, DArray *metadata_arr, thr_pool_t *pool) {
+        printf("heyyy\n");
 
         DArray *args_array = DArray_create(sizeof(exec_query_args), DArray_count(q_list));
 

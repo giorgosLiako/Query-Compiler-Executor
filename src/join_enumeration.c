@@ -1,9 +1,10 @@
 #include "join_enumeration.h"
 
 int **graph;
-statistics **stats;
+//statistics **stats;
 predicate *all_predicates;
 int predicate_size;
+int relation_size;
 
 
 //works for numbers smaller than 10
@@ -14,7 +15,7 @@ char *to_string(int rel) {
 }
 
 char *copy_string(char* str) {
-    char *s = (char *) malloc(strlen(str)*1);
+    char *s = (char *) malloc(strlen(str)+1);
     strcpy(s, str);
     return s;
 }
@@ -35,14 +36,17 @@ char *append_string(int rel, char* str) {
     char* rel_str = to_string(rel);
 
     int str_index = 0, new_index = 0;
-    for (size_t i = 0; i < strlen(str) + 1; i++) {
+    while (new_index < strlen(str) + 1 && str_index != strlen(str)) {
         if (str[str_index] > rel_str[0]){
             new[new_index++] = rel_str[0];
+            break;
         } else {
             new[new_index++] = str[str_index++];
         }
     }
-    new[str_index] = '\0';
+    if (str_index != strlen(str)) new[new_index++] = str[str_index];
+    else if (new_index != strlen(str)+1) new[new_index++] = rel_str[0];
+    new[new_index] = '\0';
 
     free(rel_str);
     return new;
@@ -87,7 +91,7 @@ void get_columns(int rel_a, int rel_b, predicate *predicates, int pred_size, DAr
      
 //  }
 
- void calculate_statistics(int rel_a, int rel_b, int col_a, int col_b, statistics *stat) {
+ void calculate_statistics(int rel_a, int rel_b, int col_a, int col_b, statistics **stats, statistics *stat) {
     
     if (stats[rel_a][col_a].min_value > stats[rel_b][col_b].min_value) stat->min_value = stats[rel_a][col_a].min_value;
     else stat->min_value = stats[rel_b][col_b].min_value;
@@ -105,7 +109,7 @@ void get_columns(int rel_a, int rel_b, predicate *predicates, int pred_size, DAr
 
 }
 
-tree *to_tree(int rel, DArray *meta){
+tree *to_tree(int rel,const DArray *meta){
     tree *new;
     new = (tree*) malloc(sizeof(tree));
     new->left = NULL;
@@ -117,13 +121,20 @@ tree *to_tree(int rel, DArray *meta){
     new->preds = NULL;
 
     new->rel_size = 1;
-    new->rels = (int*) malloc(sizeof(int));
-    new->rels[0] = rel;
+    new->rels = (int*) malloc(sizeof(int)*relation_size);
+    for (size_t i = 0; i < relation_size; i++) {
+        new->rels[i] = -1;
+    }
+    
+    new->rels[rel] = rel;
+    
 
+
+    printf("relation %d\n", rel);
     metadata current_stat = *((metadata*) DArray_get(meta, rel));
 
-    new->stats = (statistics**) malloc(sizeof(statistics*)*new->rel_size);
-    new->stats[rel] = (statistics*) malloc(sizeof(statistics*)*current_stat.columns);
+    new->stats = (statistics**) malloc(sizeof(statistics*)*relation_size);
+    new->stats[rel] = (statistics*) malloc(sizeof(statistics)*current_stat.columns);
     for (size_t i = 0; i < current_stat.columns; i++) {
         new->stats[rel][i] = *(current_stat.data[i]->stats);
     }
@@ -143,24 +154,23 @@ int predicate_compare(predicate p1, predicate p2) {
 
 }
 
-tree *create_join_tree(tree *t, int rel, DArray *meta) {
+tree *create_join_tree(tree *t, int rel,const DArray *meta) {
+    printf("new relation -> %d\n", rel);
     tree *n_tree = (tree*) malloc(sizeof(tree));
     n_tree->type = 0;
     n_tree->left = t;
     n_tree->right = to_tree(rel, meta);
 
     n_tree->rel_size = n_tree->left->rel_size + n_tree->right->rel_size;
-    n_tree->rels = (int*) malloc(sizeof(int) * n_tree->rel_size);
-    for (size_t i = 0; i < n_tree->left->rel_size; i++) {
-        n_tree->rels[i] = n_tree->left->rels[i];
+    n_tree->rels = (int*) malloc(sizeof(int) * relation_size);
+    for (size_t i = 0; i < relation_size; i++) {
+        n_tree->rels[i] = t->rels[i];
     }
-    for (size_t i = 0; i < n_tree->right->rel_size; i++) {
-        n_tree->rels[i + n_tree->left->rel_size] = n_tree->right->rels[i];
-    }
+    
 
     n_tree->pred_size = 0;
-    for (size_t i = 0; i < n_tree->rel_size; i++) {
-        n_tree->pred_size += graph[n_tree->rels[i]][rel];
+    for (size_t i = 0; i < relation_size; i++) {
+        if (t->rels[i] != -1) n_tree->pred_size += graph[t->rels[i]][rel];
     } 
     n_tree->pred_size += t->pred_size;
     n_tree->preds = (predicate*) malloc(sizeof(predicate)*n_tree->pred_size);
@@ -169,7 +179,7 @@ tree *create_join_tree(tree *t, int rel, DArray *meta) {
 
 
     n_tree->stats = t->stats;
-    n_tree->stats[rel] = (statistics*) malloc(sizeof(statistics*)*current_stat.columns);
+    n_tree->stats[rel] = (statistics*) malloc(sizeof(statistics)*current_stat.columns);
     for (size_t i = 0; i < current_stat.columns; i++) {
         n_tree->stats[rel][i] = *(current_stat.data[i]->stats);
     }
@@ -185,22 +195,26 @@ tree *create_join_tree(tree *t, int rel, DArray *meta) {
     statistics best_stat_all;
     predicate *best_pred_all = NULL;
     
-    for (size_t i = 0; i < n_tree->rel_size; i++) {
+    for (size_t i = 0; i < relation_size; i++) {
+        //printf("best rel a -> %d \n", best_rel_a);
+        if (n_tree->rels[i] == -1) continue;
         int rel_a = n_tree->rels[i];
         int rel_b = rel;
-        
+
         DArray *cols = DArray_create(sizeof(predicate), 1);
         get_columns(rel_a, rel_b, all_predicates, predicate_size, cols);
-                
+        if (DArray_count(cols) == 0) continue;
+        //printf("%d %d %d\n", rel_a, rel_b, DArray_count(cols));
         int t_best_col_a = -1;
         int t_best_col_b;
         statistics stat, best_stat;
         predicate *best_pred;
-        for (size_t j = 0; j < DArray_count(cols);) {
+        for (size_t j = 0; j < DArray_count(cols); j++) {
             predicate *pred = (predicate*) DArray_get(cols, j);
             int col_a = pred->first.column;
             int col_b = ((relation_column*) pred->second)->column;
-            calculate_statistics(rel_a, rel_b, col_a, col_b, &stat);
+            //printf("%d.%d %d.%d\n", rel_a, col_a, rel_b, col_b);
+            calculate_statistics(rel_a, rel_b, col_a, col_b, n_tree->stats, &stat);
             
             if (t_best_col_a == -1){
                 t_best_col_a = col_a;
@@ -231,10 +245,12 @@ tree *create_join_tree(tree *t, int rel, DArray *meta) {
             best_pred_all = best_pred;
         }   
     }
-
-    t->left->rel = best_rel_a;
-    t->left->col = best_col_a;
-    t->right->col = best_col_b;
+    //printf("SIZE = %d\n", n_tree->pred_size);
+    n_tree->rels[rel] = rel;
+    n_tree->left->rel = best_rel_a;
+    n_tree->left->col = best_col_a;
+    n_tree->right->col = best_col_b;
+    //printf("%d %d %d %d \n", best_rel_a, best_col_a, best_rel_b, best_col_b);
     n_tree->stats[best_rel_a][best_col_a] = best_stat_all;
     n_tree->stats[best_rel_b][best_col_b] = best_stat_all;
 
@@ -254,7 +270,7 @@ tree *create_join_tree(tree *t, int rel, DArray *meta) {
     for (size_t i = 0; i < t->pred_size; i++) {
         n_tree->preds[i] = t->preds[i];
     }
-    printf("error\n");
+    
     if (best_pred_all == NULL) return NULL;
     else n_tree->preds[t->pred_size] = *best_pred_all;
     
@@ -446,23 +462,24 @@ int cost(tree *t){
     return t->stats[t->left->rel][t->left->col].approx_elements;
 }
 
-void set_up_statistics(int rel_size, DArray *meta){
-    stats = (statistics**) malloc(rel_size*sizeof(statistics*));
-    for (size_t i = 0; i < rel_size; i++) {
-        metadata *md = (metadata*) DArray_get(meta, i);
-        stats[i] = (statistics*) malloc(md->columns*sizeof(statistics));
-        for (size_t j = 0; j < md->columns; j++) {
-            stats[i][j] = *(md->data[j]->stats);
-        }
-    }
-}
+// void set_up_statistics(int rel_size, DArray *meta){
+//     stats = (statistics**) malloc(rel_size*sizeof(statistics*));
+//     for (size_t i = 0; i < rel_size; i++) {
+//         metadata *md = (metadata*) DArray_get(meta, i);
+//         stats[i] = (statistics*) malloc(md->columns*sizeof(statistics));
+//         for (size_t j = 0; j < md->columns; j++) {
+//             stats[i][j] = *(md->data[j]->stats);
+//         }
+//     }
+// }
 
-predicate *dp_linear(int rel_size, predicate *predicates, int pred_size, DArray *meta){
+predicate *dp_linear(int rel_size, predicate *predicates, int pred_size,const DArray *meta){
     queue *set = new_queue();
     predicate_graph(predicates, pred_size, rel_size);
-    set_up_statistics(rel_size, meta);
+    //set_up_statistics(rel_size, meta);
     all_predicates = predicates;
     predicate_size = pred_size;
+    relation_size = rel_size;
 
     for (size_t i = 0; i < rel_size; i++) {
         char* n_set = to_string(i);
@@ -471,19 +488,21 @@ predicate *dp_linear(int rel_size, predicate *predicates, int pred_size, DArray 
     }
 
     for (size_t i = 0; i < rel_size - 1; i++) {
+        printf("----------------------\n");
         int set_size = q_size(set);
-        char* old_set = pop(set);
-
+        printf("set size %d\n", set_size);
         for (size_t j = 0; j < set_size; j++) {
+            char* old_set = pop(set);
 
-            for (size_t k = i + 1; k < rel_size; k++) {
-                
+            for (size_t k = j + 1; k < rel_size; k++) {
+                printf("old set %s new relation %d\n", old_set, k);
                 if (!in_string(old_set, k) && connected(old_set, k)) {
                     tree *curr_tree = create_join_tree(BestTree(old_set), k, meta);
                     char *new_set = append_string(k, old_set);
-
+                    printf("new set %s\n", new_set);
                     //TODO cost
-                    if (BestTree(new_set) == NULL || cost(BestTree(new_set)) > cost(curr_tree) ){
+                    if (BestTree(new_set) == NULL || 
+                        cost(BestTree(new_set)) > cost(curr_tree) ){
                         if (BestTree(new_set) == NULL) push(set, copy_string(new_set));
                         BestTree_set(new_set, curr_tree);
                     } 
@@ -494,7 +513,12 @@ predicate *dp_linear(int rel_size, predicate *predicates, int pred_size, DArray 
         }
         
     }
-    return BestTree(pop(set))->preds;
+    char* res = pop(set);
+    
+    print_predicates(BestTree(res)->preds, predicate_size);
+    
+    
+    return BestTree(res)->preds;
     
 }
 //&& connected(set, relations[k])

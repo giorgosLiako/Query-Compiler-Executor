@@ -24,7 +24,8 @@ q_node *find(char *s) {
 }
 
 tree *BestTree(char *s) {
-    return find(s)->tree;
+    if (find(s)) return find(s)->tree;
+    else return NULL;
 }
 
 tree *create(tree *t) {

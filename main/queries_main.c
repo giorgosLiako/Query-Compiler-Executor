@@ -12,7 +12,7 @@
 #include "../src/structs.h"
 #include "../src/thr_pool.h"
 
-#define MAX_THREADS 8
+#define MAX_THREADS 4
 
 static void free_query_list(DArray *query_list) {
    
@@ -46,7 +46,7 @@ static void free_metadata_array(DArray *metadata_arr) {
 }
 
 int main(int argc, char *argv[]) {
-
+    
     DArray *metadata_arr = DArray_create(sizeof(metadata), 10);
 
     check(read_relations(metadata_arr) != -1, "Something went wrong in reading the relations");
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
         if (DArray_count(query_list) == 0) {
             break;  
         }
-        
+        printf("test\n");
         execute_queries(query_list, metadata_arr, pool);
         
         free_query_list(query_list);
