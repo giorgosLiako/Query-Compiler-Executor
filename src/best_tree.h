@@ -22,6 +22,7 @@ typedef struct q_node {
     tree *tree; 
 } q_node;
 
-tree *BestTree(char *s);
-q_node *BestTree_set(char *name, tree *tree);
+tree *BestTree(char *s, q_node *hashtab[]);
+q_node *BestTree_set(char *name, tree *tree, q_node *hashtab[]);
+void BestTree_delete();
 #endif

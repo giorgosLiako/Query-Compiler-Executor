@@ -13,7 +13,7 @@
 #include "../src/thr_pool.h"
 #include "../src/stretchy_buffer.h"
 
-#define MAX_THREADS 8
+#define MAX_THREADS 4
 
 static void free_query_list(query *query_list) {
    
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
         if (buf_len(query_list) == 0) {
             break;
         }
-        
+        printf("test\n");
         execute_queries(query_list, metadata_arr, pool);
         
         free_query_list(query_list);
@@ -75,66 +75,3 @@ int main(int argc, char *argv[]) {
      error:
         return EXIT_FAILURE;
 }
-
-/*
-    FILE *fp = fopen(argv[1], "r");
-
-    ssize_t nread;
-    char *linptr = NULL;
-    size_t n = 0;
-    uint64_t num_tuples_R = 0;
-    while ( (nread = getline(&linptr, &n, fp)) != -1) {
-        num_tuples_R++;
-    }
-    sleep(2);
-    tuple *tuples = MALLOC(tuple, num_tuples_R);
-
-    linptr = NULL;
-    n = 0;
-    rewind(fp);
-    size_t i = 0;
-    while ( (nread = getline(&linptr, &n, fp)) != -1) {
-        sscanf(linptr, "%lu,%lu\n", &tuples[i].key, &tuples[i].payload);
-        i++;
-    }
-
-    DArray *tuples_R = DArray_create(sizeof(tuple), num_tuples_R);
-    for (ssize_t i = 0 ; i < num_tuples_R ; i++) {
-        tuple to_push = tuples[i];
-        DArray_push(tuples_R, &to_push);
-    }
-
-    fp = fopen(argv[2], "r");
-
-    linptr = NULL;
-    n = 0;
-    uint64_t num_tuples_S = 0;
-    while ( (nread = getline(&linptr, &n, fp)) != -1) {
-        num_tuples_S++;
-    }
-    tuple *tuples_S_tmp = MALLOC(tuple, num_tuples_S);
-
-    linptr = NULL;
-    n = 0;
-    rewind(fp);
-    i = 0;
-    while ( (nread = getline(&linptr, &n, fp)) != -1) {
-        sscanf(linptr, "%lu,%lu\n", &tuples_S_tmp[i].key, &tuples_S_tmp[i].payload);
-        i++;
-    }
-
-    DArray *tuples_S = DArray_create(sizeof(tuple), num_tuples_S);
-    for (ssize_t i = 0 ; i < num_tuples_S ; i++) {
-        DArray_push(tuples_S, &tuples_S_tmp[i]);
-    }
-    FREE(tuples);
-    FREE(tuples_S_tmp);
-
-    DArray *queue_R, *queue_S;
-    uint32_t jobs_created_R, jobs_created_S;
-
-    iterative_sort(tuples_R, &queue_R, &jobs_created_R, pool);
-    iterative_sort(tuples_S, &queue_S, &jobs_created_S, pool);
-
-    uint32_t jobs_to_create = jobs_created_R < jobs_created_S ? jobs_created_R : jobs_created_S;
-    join_relations(tuples_R, tuples_S, queue_R, queue_S, jobs_to_create, pool);*/

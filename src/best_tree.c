@@ -4,7 +4,6 @@
 
 
 #define HASHSIZE 101
-static q_node *hashtab[HASHSIZE]; 
 
 
 unsigned hash(char *s) {
@@ -16,15 +15,16 @@ unsigned hash(char *s) {
 
 
 
-q_node *find(char *s) {
+q_node *find(char *s, q_node *hashtab[HASHSIZE]) {
     q_node *np;
     for (np = hashtab[hash(s)]; np != NULL; np = np->next)
         if (strcmp(s, np->name) == 0) return np;
     return NULL; 
 }
 
-tree *BestTree(char *s) {
-    return find(s)->tree;
+tree *BestTree(char *s, q_node *hashtab[HASHSIZE]) {
+    if (find(s, hashtab)) return find(s, hashtab)->tree;
+    else return NULL;
 }
 
 tree *create(tree *t) {
@@ -35,11 +35,11 @@ tree *create(tree *t) {
 }
 
 
-q_node *BestTree_set(char *name, tree *tree) {
+q_node *BestTree_set(char *name, tree *tree, q_node *hashtab[HASHSIZE]) {
     q_node *np;
     unsigned hashval;
 
-    if ((np = find(name)) == NULL) { 
+    if ((np = find(name, hashtab)) == NULL) { 
 
         np = (q_node *) malloc(sizeof(q_node));
         if (np == NULL || (np->name = strdup(name)) == NULL) return NULL;
@@ -57,4 +57,18 @@ q_node *BestTree_set(char *name, tree *tree) {
     if ((np->tree = create(tree)) == NULL) return NULL;
 
     return np;
+}
+
+void BestTree_delete(q_node *hashtab[HASHSIZE]){
+    q_node *np;
+    q_node *temp;
+    for (size_t i = 0; i < HASHSIZE; i++) {
+        for (np = hashtab[i]; np != NULL;){
+            temp = np;
+            np = np->next;
+            free(temp);
+        }
+        hashtab[i] = NULL;
+    }
+    
 }
