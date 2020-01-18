@@ -59,7 +59,6 @@ int main(int argc, char *argv[]) {
         if (buf_len(query_list) == 0) {
             break;
         }
-        printf("test\n");
         execute_queries(query_list, metadata_arr, pool);
         
         free_query_list(query_list);

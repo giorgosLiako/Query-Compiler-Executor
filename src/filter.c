@@ -92,7 +92,7 @@ mid_result** execute_filter(predicate *pred, uint32_t *relations, metadata *meta
 
             buf_push(mid_results, res);
 
-            printf("found = %d\n", buf_len(res.payloads));
+            //printf("found = %d\n", buf_len(res.payloads));
         }
         else {
             relation_column rel_col = *(relation_column *) pred->second;

@@ -299,7 +299,7 @@ void update_mid_results(mid_result **mid_results_array, metadata *metadata_arr, 
         }
 
         if (exists_r.index == -1) {
-            printf("buf_len = %d\n", buf_len(mid_results_array));
+            //printf("buf_len = %d\n", buf_len(mid_results_array));
             buf_push(mid_results_array[buf_len(mid_results_array) - 1], tmp_R);  
         }
         if (exists_s.index == -1) {

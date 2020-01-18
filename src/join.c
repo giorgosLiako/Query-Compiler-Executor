@@ -79,7 +79,7 @@ void *join_job(void *args) {
 
     for (ssize_t i = argm->start ; i < argm->end ; i++) {
         queue_node qnode_R = argm->queue_R[argm->indices_to_check[0][i]];
-        queue_node qnode_S = argm->queue_S[argm->indices_to_check[1][1]];
+        queue_node qnode_S = argm->queue_S[argm->indices_to_check[1][i]];
         
         size_t pr = qnode_R.base;
         size_t r_end = qnode_R.base + qnode_R.size;
@@ -216,7 +216,7 @@ mid_result** execute_join(predicate *pred, uint32_t *relations, metadata *metada
 
     int retval = build_relations(pred, relations, metadata_arr, &mid_results_array, rel);
 
-    printf("about to join %d and %d\n", rel[0]->tuples->num_tuples, rel[1]->tuples->num_tuples);
+   // printf("about to join %d and %d\n", rel[0]->tuples->num_tuples, rel[1]->tuples->num_tuples);
     
     join_result join_res;
 
@@ -258,7 +258,7 @@ mid_result** execute_join(predicate *pred, uint32_t *relations, metadata *metada
         join_res = join_relations_single_threaded(rel[0]->tuples, rel[1]->tuples);
     }
 
-    printf("join returned %d and %d\n", buf_len(join_res.results[0]), buf_len(join_res.results[1]));
+   // printf("join returned %d and %d\n", buf_len(join_res.results[0]), buf_len(join_res.results[1]));
 
     join_info info;
 
