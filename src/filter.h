@@ -6,6 +6,6 @@
 #include "utilities.h"
 #include "queries.h"
 
-int execute_filter(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results_array);
+mid_result** execute_filter(predicate *pred, uint32_t *relations, metadata *metadata_arr, mid_result **mid_results_array);
 
 #endif

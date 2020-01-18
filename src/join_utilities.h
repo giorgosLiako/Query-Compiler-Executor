@@ -12,8 +12,10 @@
 #include "structs.h"
 #include "queries.h"
 
-void update_mid_results(DArray *mid_results_array, DArray *metadata_arr, join_info info, rel_info *rel[2]);
+void update_mid_results(mid_result **mid_results_array, metadata *metadata_arr, join_info info);
 
-int sort_relations(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results_array, rel_info *rel[2], thr_pool_t *pool);
+int build_relations(predicate *pred, uint32_t *relations, metadata *metadata_arr, mid_result ***mid_results_array, rel_info *rel[2]);
+
+void create_new_queue(relation *rel, queue_node **retval, uint32_t *jobs_created);
 
 #endif

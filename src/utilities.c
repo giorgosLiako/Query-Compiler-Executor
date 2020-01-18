@@ -1,17 +1,19 @@
 #include "utilities.h"
+#include "stretchy_buffer.h"
 
 #define N 30001891
 
-void build_histogram_darray(DArray *tuples, histogram *hist, uint8_t wanted_byte, int start, int size) {
-
+//function to build a histogram
+void build_histogram(relation *rel, histogram *hist, uint8_t wanted_byte, int start, int size) {
+    //start is the index that starts the bucket and size is the number of tuples that has
+    //intialize the histogram
     for (size_t i = 0 ; i < 256 ; i++) {
         hist->array[i] = 0;
     }
-
+    //take the wanted byte of the tuples that belong to the bucket and make the histogram
     for (ssize_t i = start ; i < start + size ; i++) {
-        tuple *tup = (tuple *) DArray_get(tuples, i);
-        uint32_t byte = get_byte(tup->key, wanted_byte);
-        hist->array[byte]++;
+        uint32_t byte = get_byte(rel->tuples[i].key, wanted_byte);
+        hist->array[byte]++; 
     }
 }
 
@@ -21,6 +23,7 @@ void build_psum(histogram *hist, histogram *psum) {
     for (size_t i =  0 ; i < 256 ; i++) {
         psum->array[i] = -1;
     }
+
     size_t offset = 0;
     for (ssize_t i = 0;  i < 256 ; i++) {
         if (hist->array[i] != 0) { //every cell is not 0 there is in the histogram , so put it in the psum
@@ -28,44 +31,53 @@ void build_psum(histogram *hist, histogram *psum) {
             offset +=  hist->array[i]; //find the offset with the help of histogram
         }
     }
+
 }
 
-DArray* build_reordered_darray(DArray *reorder_rel, DArray *prev_rel, histogram *histo, histogram *psum, uint8_t wanted_byte, int start, int size) {
-
+//function to build the reordered array
+relation* build_reordered_array(relation* reorder_rel , relation *prev_rel, 
+                                histogram* histo , histogram* psum, 
+                                uint8_t wanted_byte, int start, int size) {
+   
     histogram temp = *histo;
 
+    
     for (ssize_t i = start ; i < start + size ; i++) {
-        tuple *tup = (tuple *) DArray_get(prev_rel, i);
-        uint8_t byte = get_byte(tup->key, wanted_byte);
+        uint8_t byte = get_byte(prev_rel->tuples[i].key, wanted_byte);
 
-        size_t index = start + psum->array[byte] + (histo->array[byte] - temp.array[byte]);
-        temp.array[byte]--;
+        size_t index = start +  psum->array[byte] + (histo->array[byte] - temp.array[byte]);
 
-        tuple to_push;
-        to_push.key = tup->key;
-        to_push.payload = tup->payload;
+        temp.array[byte]--;    
 
-        DArray_set(reorder_rel, index, &to_push);
+        reorder_rel->tuples[index].key = prev_rel->tuples[i].key;
+        reorder_rel->tuples[index].payload = prev_rel->tuples[i].payload;
     }
 
     return reorder_rel;
 }
 
-DArray* allocate_reordered_darray(DArray *rel) {
-    
-    DArray *tmp = DArray_create(sizeof(tuple), DArray_capacity(rel));
-    check_mem(tmp);
 
-    return tmp;
+//function to allocate the memory for the reordered array
+relation* allocate_reordered_array(relation* rel) {
+    
+    relation *r = NULL;
+    r = MALLOC(relation, 1);
+    check_mem(r);
+
+    r->num_tuples = rel->num_tuples;
+    r->tuples = MALLOC(tuple, rel->num_tuples);
+    check_mem(r->tuples);
+
+    return r;
 
     error:
         return NULL;
 }
 
-void swap_darrays(DArray *r1, DArray *r2) {
-    DArray *tmp = r1;
-    r1 = r2;
-    r2 = tmp;
+//function to free the allocated memory of the reordered array
+void free_reordered_array(relation* r) {
+    FREE(r->tuples);
+    FREE(r);
 }
 
 static inline void fill_data(metadata *m_data, uint64_t *mapped_file) {
@@ -76,27 +88,25 @@ static inline void fill_data(metadata *m_data, uint64_t *mapped_file) {
 
     for (size_t j = 0 ; j < m_data->columns ; j++) {
         relation *rel = MALLOC(relation, 1);
-        rel->tuples = DArray_create(sizeof(tuple), m_data->tuples);
+        rel->num_tuples = m_data->tuples;
+        rel->tuples = MALLOC(tuple, rel->num_tuples);
         m_data->data[j] = rel;
         uint64_t max_value = 0;
         uint64_t min_value = 0;
         for (size_t i = 0 ; i < m_data->tuples ; i++) {
-            uint64_t current_key = *mapped_file++;
-            tuple tup;
-            tup.key = current_key;
-            tup.payload = i;
-            DArray_push(rel->tuples, &tup);
+            rel->tuples[i].key = *mapped_file++;
+            rel->tuples[i].payload = i;
             
             if (i == 0) {
-                max_value = current_key;
-                min_value = current_key;
+                max_value = rel->tuples[i].key;
+                min_value = rel->tuples[i].key;
             }
             else {
-                if (current_key > max_value) {
-                    max_value = current_key;
+                if (rel->tuples[i].key > max_value) {
+                    max_value = rel->tuples[i].key;
                 }
-                if (current_key < min_value) {
-                    min_value = current_key;
+                if (rel->tuples[i].key < min_value) {
+                    min_value = rel->tuples[i].key;
                 }
             } 
         }
@@ -106,8 +116,8 @@ static inline void fill_data(metadata *m_data, uint64_t *mapped_file) {
         }
         size_t array_size = is_smaller ? max_value - min_value + 1 : N;
         bool *distinct = CALLOC(array_size, sizeof(bool), bool);
-        for (size_t i = 0 ; i < DArray_count(rel->tuples) ; i++) {
-            uint64_t key = ((tuple *) DArray_get(rel->tuples, i))->key;
+        for (size_t i = 0 ; i < rel->num_tuples ; i++) {
+            uint64_t key = rel->tuples[i].key;
             if (is_smaller) {
                 distinct[key - min_value] = true;
             } 
@@ -117,7 +127,7 @@ static inline void fill_data(metadata *m_data, uint64_t *mapped_file) {
         }
         
         uint32_t distinct_values = 0;
-        for (size_t i  = 0 ; i < DArray_count(rel->tuples) ; i++) {
+        for (size_t i  = 0 ; i < rel->num_tuples ; i++) {
             distinct_values++;
         
         }
@@ -127,7 +137,7 @@ static inline void fill_data(metadata *m_data, uint64_t *mapped_file) {
         rel->stats->distinct_values = distinct_values;
         rel->stats->array = distinct;
         rel->stats->array_size = array_size;
-        rel->stats->approx_elements = DArray_count(rel->tuples);
+        rel->stats->approx_elements = rel->num_tuples;
     }
 }
 
@@ -172,7 +182,7 @@ static void update_other_columns(ssize_t column, ssize_t approx_elements, metada
     }
 }
 
-void update_statistics(query *qry, DArray *metadata_arr) {
+void update_statistics(query *qry, metadata *metadata_arr) {
 
     printf("I GOT CALLED\n");
 
@@ -183,7 +193,7 @@ void update_statistics(query *qry, DArray *metadata_arr) {
             
             uint32_t row = qry->relations[current.first.relation];
             uint32_t column = current.first.column;
-            metadata *md = (metadata *) DArray_get(metadata_arr, row);
+            metadata *md = &(metadata_arr[row]);
             relation *rel = md->data[column];
 
             bool found = false;
@@ -338,11 +348,12 @@ void update_statistics(query *qry, DArray *metadata_arr) {
    }
 }
 
-int read_relations(DArray *metadata_arr) {
+metadata* read_relations() {
 
     char *linptr = NULL;
     size_t n = 0;
 
+    metadata *metadata_arr = NULL;
 
     while (getline(&linptr, &n, stdin) != -1) {
         if (!strncmp(linptr, "Done\n", strlen("Done\n")) || !strncmp(linptr,"done\n", strlen("done\n"))) {
@@ -364,32 +375,32 @@ int read_relations(DArray *metadata_arr) {
 
         fill_data(&m_data, mapped_file);
 
-        DArray_push(metadata_arr, &m_data);
+        buf_push(metadata_arr, m_data);
 
         munmap(mapped_file, sb.st_size);
         close(fd);
     }
 
     FREE(linptr);
-    return 0;
+    return metadata_arr;
 
     error:
         FREE(linptr);
-        return -1;
+        return NULL;
 }
 
-exists_info relation_exists(DArray *mid_results_array, uint64_t relation, uint64_t predicate_id) {
+exists_info relation_exists(mid_result **mid_results_array, uint64_t relation, uint64_t predicate_id) {
 
     exists_info exists;
     exists.index = -1;
-    for (ssize_t i = DArray_count(mid_results_array) - 1 ; i >= 0 ; i--) {
-        DArray *mid_results = * (DArray **) DArray_get(mid_results_array, i);
-        for (ssize_t j = 0 ; j < DArray_count(mid_results) ; j++) {
-            mid_result *current = (mid_result *) DArray_get(mid_results, j);
-            if (current->relation == relation && current->predicate_id == predicate_id) {
-                exists.index = j;
-                exists.mid_result = i;
-                return exists;
+    for (ssize_t i = buf_len(mid_results_array) - 1 ; i >= 0 ; i--) {
+        if (mid_results_array[i] != NULL) {
+            for (ssize_t j = 0 ; j < buf_len(mid_results_array[i]) ; j++) {
+                if (mid_results_array[i][j].relation == relation && mid_results_array[i][j].predicate_id == predicate_id) {
+                    exists.index = j;
+                    exists.mid_result = i;
+                    return exists;
+                }
             }
         }
     }
@@ -397,14 +408,14 @@ exists_info relation_exists(DArray *mid_results_array, uint64_t relation, uint64
     return exists;
 }
 
-ssize_t relation_exists_current(DArray *mid_results, uint64_t relation, uint64_t predicate_id) {
+ssize_t relation_exists_current(mid_result *mid_results, uint64_t relation, uint64_t predicate_id) {
 
     ssize_t found = -1;
-    for (ssize_t i = 0 ; i < DArray_count(mid_results) ; i++) {
-        mid_result res = *(mid_result *) DArray_get(mid_results, i);
-        if ((res.relation == relation) && (res.predicate_id == predicate_id) ) {
+    for (ssize_t i = 0 ; i < buf_len(mid_results) ; i++) {
+        if (mid_results[i].relation == relation && mid_results[i].predicate_id == predicate_id) {
             found = i;
-        }
+            break;
+        } 
     }
 
     return found;

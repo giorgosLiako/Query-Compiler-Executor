@@ -1,4 +1,5 @@
 #include "parsing.h"
+#include "stretchy_buffer.h"
 
 static void parse_relations(char *string, query *q) {
     //find how many relations appear according to spaces
@@ -125,8 +126,8 @@ static void parse_select(char* string, query *q) {
     q->select_size = spaces + 1;
 }
 
-DArray* parser() {
-    DArray* queries = DArray_create(sizeof(query), 10);
+query* parser() {
+    query* queries = NULL;
 
     char* line_ptr = NULL;
     size_t n = 0;
@@ -141,15 +142,14 @@ DArray* parser() {
 
         sscanf(line_ptr, "%[0-9 ]%*[|]%[0-9.=<>&]%*[|]%[0-9. ]", relations, predicates, select);
 
-        query new_query;
+        query new_query = {0};
         parse_relations(relations, &new_query);
         
         parse_predicates(predicates, &new_query);
         
         parse_select(select,  &new_query);
         
-        DArray_push(queries, &new_query);
-
+        buf_push(queries, new_query);
     }
 
     FREE(line_ptr);

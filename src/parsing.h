@@ -11,6 +11,6 @@
 #include "queries.h"
 #include "filter.h"
 
-DArray *parser();
+query *parser();
 
 #endif

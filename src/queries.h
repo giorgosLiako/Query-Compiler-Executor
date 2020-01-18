@@ -42,7 +42,7 @@ typedef struct mid_result {
     uint64_t relation;
     uint64_t predicate_id;
     int32_t last_column_sorted;
-    DArray* tuples;
+    uint64_t  *payloads;
 } mid_result;
 
 typedef struct exists_info {
@@ -50,6 +50,6 @@ typedef struct exists_info {
     ssize_t index;
 } exists_info;
 
-void execute_queries(DArray *q_list, DArray *metadata_arr, thr_pool_t *pool);
+void execute_queries(query *q_list, metadata *metadata_arr, thr_pool_t *pool);
 
 #endif

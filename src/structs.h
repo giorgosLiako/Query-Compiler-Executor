@@ -22,7 +22,8 @@ typedef struct statistics {
 } statistics;
 
 typedef struct relation {
-    DArray *tuples;
+    tuple *tuples;
+    uint64_t num_tuples;
     statistics *stats;
 } relation;
 

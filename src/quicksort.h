@@ -17,15 +17,15 @@ typedef struct queue_node {
 } queue_node;
 
 typedef struct sort_args {
-    DArray *relations[2];
-    DArray *queue;
+    relation *relations[2];
+    queue_node *queue;
     uint32_t start;
     uint32_t end;
     int index;
 } sort_args;
 
-int iterative_sort(DArray *tuples, DArray **retval, uint32_t *jobs_created, thr_pool_t *pool);
+void iterative_sort(relation *rel, queue_node **retval, uint32_t *jobs_created, thr_pool_t *pool);
 
-void random_quicksort(DArray *tuples, ssize_t low, ssize_t high);
+void random_quicksort(tuple *tuples, ssize_t low, ssize_t high);
 
 #endif

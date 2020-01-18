@@ -13,8 +13,7 @@
 #include "queries.h"
 
 typedef struct join_result {
-    DArray *no_duplicates[2];
-    DArray *results[2];
+    uint64_t *results[2];
 } join_result;
 
 typedef struct join_info {
@@ -32,29 +31,23 @@ typedef struct join_arguments {
     uint32_t start;
     uint32_t end;
     uint16_t **indices_to_check;
-    DArray *rel_R;
-    DArray *rel_S;
-    DArray *queue_R;
-    DArray *queue_S;
+    relation *rel_R;
+    relation *rel_S;
+    queue_node *queue_R;
+    queue_node *queue_S;
     join_result join_res;
 } join_arguments;
 
 typedef struct rel_info {
-    DArray *rel;
-    DArray *queue;
+    relation *tuples;
+    queue_node *queue;
     uint32_t jobs_to_create;
-    bool destroy_rel;
 } rel_info; 
 
-typedef struct payloads {
-    uint64_t payload_R;
-    uint64_t payload_S;
-} payloads;
+join_result scan_join(relation *relR, relation *relS);
 
-join_result scan_join(DArray *relR, DArray *relS);
+join_result join_relations(relation *relR, relation *relS, queue_node *queue_R, queue_node *queue_S, uint32_t jobs_to_create, thr_pool_t *pool);
 
-join_result join_relations(DArray *relR, DArray *relS, DArray *queue_R, DArray *queue_S, uint32_t jobs_to_create, thr_pool_t *pool);
-
-int execute_join(predicate *pred, uint32_t *relations, DArray *metadata_arr, DArray *mid_results_array, thr_pool_t *pool);
+mid_result** execute_join(predicate *pred, uint32_t *relations, metadata *metadata_arr, mid_result **mid_results_array, thr_pool_t *pool);
 
 #endif
