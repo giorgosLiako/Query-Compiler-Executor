@@ -230,7 +230,7 @@ void print_select(relation_column* r_c, size_t size){
         query *qry = args->qry;
        
         arrange_predicates(qry);
-       // print_predicates(qry->predicates, qry->predicates_size);
+        //print_predicates(qry->predicates, qry->predicates_size);
 
         mid_result **mid_results_array = NULL;
 

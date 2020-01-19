@@ -221,10 +221,10 @@ int build_relations(predicate *pred, uint32_t *relations, metadata *metadata_arr
                 return SCAN_JOIN;
             }
             else if (mid_results[rhs_index].last_column_sorted == (int32_t) rhs_col) {
-                return JOIN_SORT_RHS;
+                return JOIN_SORT_LHS;
             }
             else if (mid_results_array[exists.mid_result][exists.index].last_column_sorted == (int32_t) lhs_col) {
-                return JOIN_SORT_LHS;
+                return JOIN_SORT_RHS;
             }
             else {
                 return CLASSIC_JOIN;
@@ -299,7 +299,6 @@ void update_mid_results(mid_result **mid_results_array, metadata *metadata_arr, 
         }
 
         if (exists_r.index == -1) {
-            //printf("buf_len = %d\n", buf_len(mid_results_array));
             buf_push(mid_results_array[buf_len(mid_results_array) - 1], tmp_R);  
         }
         if (exists_s.index == -1) {
@@ -322,8 +321,7 @@ void update_mid_results(mid_result **mid_results_array, metadata *metadata_arr, 
         fix_all_mid_results(mid_results_array, exists_s.mid_result, exists_s.index, &tmp_S, info.join_res.results[1], 0);
 
         if (exists_r.index == -1) {
-            mid_result *mid_res = mid_results_array[buf_len(mid_results_array) - 1];
-            buf_push(mid_res, tmp_R);
+            buf_push(mid_results_array[buf_len(mid_results_array) - 1], tmp_R);
         }
     }
     else if (join_id == JOIN_SORT_RHS) {
