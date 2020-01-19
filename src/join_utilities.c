@@ -146,44 +146,52 @@ int build_relations(predicate *pred, uint32_t *relations, metadata *metadata_arr
 
     mid_result **mid_results_array = *mid_results_array_ptr;
 
-    mid_result *mid_results = NULL;
-	if (buf_len(*mid_results_array) > 0) {
-		mid_results = mid_results_array[buf_len(mid_results_array) - 1];
-	}
+    exists_info exists_r = relation_exists(mid_results_array, lhs_rel, pred->first.relation);
+    exists_info exists_s = relation_exists(mid_results_array, rhs_rel, second->relation);
 
-    ssize_t lhs_index = relation_exists_current(mid_results, lhs_rel, pred->first.relation);
-    ssize_t rhs_index = relation_exists_current(mid_results, rhs_rel, second->relation);
-    
-    /*Check if relations exist in the mid results and if they are sorted
-    and create them accordingly*/
-    
-    if (lhs_index != -1 && rhs_index == -1) {
+    if (exists_r.index != -1 && exists_s.index == -1) {
 
-        allocate_relation_mid_results(rel, mid_results[lhs_index], metadata_arr[lhs_rel].data[lhs_col]->tuples, 0);
+        allocate_relation_mid_results(rel, mid_results_array[exists_r.mid_result][exists_r.index], metadata_arr[lhs_rel].data[lhs_col]->tuples, 0);
 
-        exists_info exists = relation_exists(mid_results_array, rhs_rel, second->relation);
-        if (exists.index == -1) {
-            allocate_relation(rel, metadata_arr[rhs_rel].data[rhs_col], 1);
-        } else {
-            allocate_relation_mid_results(rel, mid_results_array[exists.mid_result][exists.index], metadata_arr[rhs_rel].data[rhs_col]->tuples, 1);
-        }
+        allocate_relation(rel, metadata_arr[rhs_rel].data[rhs_col], 1);
 
-        if (exists.index == -1) {
-            if (mid_results[lhs_index].last_column_sorted == (int32_t) lhs_col) {
-                return JOIN_SORT_RHS;
-            } else {
-				mid_results[lhs_index].last_column_sorted = lhs_col;
-                return CLASSIC_JOIN;
-            }
+        if (mid_results_array[exists_r.mid_result][exists_r.index].last_column_sorted == (int32_t) lhs_col) {
+            return JOIN_SORT_RHS;
         }
         else {
-            if (mid_results[lhs_index].last_column_sorted == (int32_t) lhs_col && mid_results_array[exists.mid_result][exists.index].last_column_sorted == (int32_t) rhs_col) {
+            mid_results_array[exists_r.mid_result][exists_r.index].last_column_sorted = lhs_col;
+            return CLASSIC_JOIN;
+        }
+    }
+    else if (exists_r.index == -1 && exists_s.index != -1) {
+
+        allocate_relation_mid_results(rel, mid_results_array[exists_s.mid_result][exists_s.index], metadata_arr[rhs_rel].data[rhs_col]->tuples, 1);
+
+        allocate_relation(rel, metadata_arr[lhs_rel].data[lhs_col], 0);
+
+        if (mid_results_array[exists_s.mid_result][exists_s.index].last_column_sorted == (int32_t) rhs_col) {
+            return JOIN_SORT_LHS;
+        }
+        else {
+            return CLASSIC_JOIN;
+        }
+    }
+    else if (exists_r.index != -1 && exists_s.index != -1) {
+        
+        allocate_relation_mid_results(rel, mid_results_array[exists_s.mid_result][exists_s.index], metadata_arr[rhs_rel].data[rhs_col]->tuples, 1);
+        allocate_relation_mid_results(rel, mid_results_array[exists_r.mid_result][exists_r.index], metadata_arr[lhs_rel].data[lhs_col]->tuples, 0);
+        
+        if (exists_r.mid_result == exists_s.mid_result) {    
+            return SCAN_JOIN;
+        }
+        else {
+            if (mid_results_array[exists_r.mid_result][exists_r.index].last_column_sorted == lhs_col && mid_results_array[exists_s.mid_result][exists_s.index].last_column_sorted == rhs_col) {
                 return SCAN_JOIN;
             }
-            else if (mid_results[lhs_index].last_column_sorted == (int32_t) lhs_col) {
+            else if (mid_results_array[exists_r.mid_result][exists_r.index].last_column_sorted == lhs_col) {
                 return JOIN_SORT_RHS;
             }
-            else if (mid_results_array[exists.mid_result][exists.index].last_column_sorted == (int32_t) rhs_col) {
+            else if (mid_results_array[exists_s.mid_result][exists_s.index].last_column_sorted == rhs_col) {
                 return JOIN_SORT_LHS;
             }
             else {
@@ -191,64 +199,16 @@ int build_relations(predicate *pred, uint32_t *relations, metadata *metadata_arr
             }
         }
     }
-    else if (lhs_index != -1 && rhs_index != -1) {
-        allocate_relation_mid_results(rel, mid_results[lhs_index], metadata_arr[lhs_rel].data[lhs_col]->tuples, 0);
-        allocate_relation_mid_results(rel, mid_results[rhs_index], metadata_arr[rhs_rel].data[rhs_col]->tuples, 1);
-
-       return SCAN_JOIN;
-    }
-    else if (lhs_index == -1 && rhs_index != -1) {
-
-        allocate_relation_mid_results(rel, mid_results[rhs_index], metadata_arr[rhs_rel].data[rhs_col]->tuples, 1);
-
-        exists_info exists = relation_exists(mid_results_array, lhs_rel, pred->first.relation);
-        if (exists.index == -1) {
-            allocate_relation(rel, metadata_arr[lhs_rel].data[lhs_col], 0);
-        } else {
-            allocate_relation_mid_results(rel, mid_results_array[exists.mid_result][exists.index], metadata_arr[lhs_rel].data[lhs_col]->tuples, 0);
-        }
-        
-        if (exists.index == -1) {
-            if (mid_results[rhs_index].last_column_sorted == (int32_t) rhs_col) {
-                return JOIN_SORT_LHS;
-            } else {
-                mid_results[rhs_index].last_column_sorted = rhs_col;
-                return CLASSIC_JOIN;
-            }
-        }
-        else {
-            if (mid_results[rhs_index].last_column_sorted == (int32_t) rhs_col && mid_results_array[exists.mid_result][exists.index].last_column_sorted == (int32_t) lhs_col) {
-                return SCAN_JOIN;
-            }
-            else if (mid_results[rhs_index].last_column_sorted == (int32_t) rhs_col) {
-                return JOIN_SORT_LHS;
-            }
-            else if (mid_results_array[exists.mid_result][exists.index].last_column_sorted == (int32_t) lhs_col) {
-                return JOIN_SORT_RHS;
-            }
-            else {
-                return CLASSIC_JOIN;
-            }
-        }
-        
-    }
-    else if (lhs_index == -1 && rhs_index == -1) {
+    else {
 
         allocate_relation(rel, metadata_arr[rhs_rel].data[rhs_col], 1);
         allocate_relation(rel, metadata_arr[lhs_rel].data[lhs_col], 0);
-
+        
         mid_result *mid_res = NULL;
         buf_push((*mid_results_array_ptr), mid_res);
 
-        if (rhs_rel != lhs_rel || pred->first.relation != second->relation) {
-            return CLASSIC_JOIN;
-        }
-        else {
-            return SCAN_JOIN;
-        }
+        return CLASSIC_JOIN;
     }
-
-	return 0;
 }
 
 static void fix_all_mid_results(mid_result **mid_results_array, ssize_t mid_result_index, ssize_t index, mid_result *current_mid_res, uint64_t *join_payloads, bool is_scan) {
@@ -299,10 +259,20 @@ void update_mid_results(mid_result **mid_results_array, metadata *metadata_arr, 
         }
 
         if (exists_r.index == -1) {
-            buf_push(mid_results_array[buf_len(mid_results_array) - 1], tmp_R);  
+            if (exists_s.index != -1) {
+                buf_push(mid_results_array[exists_s.mid_result], tmp_R); 
+            }
+            else {
+                buf_push(mid_results_array[buf_len(mid_results_array) - 1], tmp_R);
+            }
         }
         if (exists_s.index == -1) {
-            buf_push(mid_results_array[buf_len(mid_results_array) - 1], tmp_S);
+            if (exists_r.index != -1) {
+                buf_push(mid_results_array[exists_r.mid_result], tmp_S); 
+            }
+            else {
+                buf_push(mid_results_array[buf_len(mid_results_array) - 1], tmp_S);
+            }
         }
     }
     else if (join_id == JOIN_SORT_LHS) {
@@ -324,7 +294,7 @@ void update_mid_results(mid_result **mid_results_array, metadata *metadata_arr, 
         buf_free(tmp_S.payloads);
 
         if (exists_r.index == -1) {
-            buf_push(mid_results_array[buf_len(mid_results_array) - 1], tmp_R);
+            buf_push(mid_results_array[exists_s.mid_result], tmp_R);
         }
     }
     else if (join_id == JOIN_SORT_RHS) {
@@ -345,7 +315,7 @@ void update_mid_results(mid_result **mid_results_array, metadata *metadata_arr, 
         buf_free(tmp_R.payloads);
 
         if (exists_s.index == -1) {
-            buf_push(mid_results_array[buf_len(mid_results_array) - 1], tmp_S);
+            buf_push(mid_results_array[exists_r.mid_result], tmp_S);
         }
     }
     else if (join_id == SCAN_JOIN) {
