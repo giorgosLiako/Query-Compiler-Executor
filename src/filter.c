@@ -55,6 +55,8 @@ static uint64_t* exec_filter_rel_no_exists(predicate *pred,relation* rel , uint6
     return payloads;
 }
 
+//(TODO) Check why it works with valgrind, check single threaded.
+
 mid_result** execute_filter(predicate *pred, uint32_t *relations, metadata *metadata_arr, mid_result **mid_results_array) {
 
     metadata *tmp_data = &(metadata_arr[relations[pred->first.relation]]);
