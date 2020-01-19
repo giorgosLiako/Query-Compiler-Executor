@@ -18,14 +18,12 @@
 static void free_query_list(query *query_list) {
    
    for (size_t i = 0 ; i < buf_len(query_list); i++) {
-        query *qr = &(query_list[i]);
-        if (qr != NULL){
-            FREE(qr->relations);
-            for(size_t j = 0 ; j < qr->predicates_size ; j++)
-                FREE(qr->predicates[j].second);
-            FREE(qr->predicates);
-            FREE(qr->selects);
-        }
+        query qr = query_list[i];
+        FREE(qr.relations);
+        for(size_t j = 0 ; j < qr.predicates_size ; j++)
+            FREE(qr.predicates[j].second);
+        FREE(qr.predicates);
+        FREE(qr.selects);
     }
     buf_free(query_list);
 }
@@ -46,7 +44,7 @@ static void free_metadata_array(metadata *metadata_arr) {
     buf_free(metadata_arr);
 }
 
-int main(int argc, char *argv[]) {
+int main() {
 
     metadata *metadata_arr = read_relations();
     check_mem(metadata_arr);

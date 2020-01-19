@@ -5,7 +5,7 @@
 #include "stretchy_buffer.h"
 
 typedef struct exec_query_args {
-    query *qry;
+    query qry;
     metadata *metadata_arr;
     thr_pool_t *pool;
     mid_result ***mid_results_arrays;
@@ -175,33 +175,28 @@ void print_select(relation_column* r_c, size_t size){
 
 
 #ifndef MULTITHREADING
-    static int execute_query(query* q , DArray* metadata_arr, thr_pool_t *pool) {
+    static int execute_query(query q , metadata* metadata_arr, thr_pool_t *pool) {
 
-        DArray *mid_results_array = DArray_create(sizeof(DArray *), 2);
-
-        //print_predicates(q->predicates, q->predicates_size);
-        //print_select(q->selects, q->select_size);
+        mid_result **mid_results_array = NULL;
     
-        for (size_t i = 0 ; i < (size_t)q->predicates_size ; i++) {
+        for (size_t i = 0 ; i < (size_t)q.predicates_size ; i++) {
 
-            if( q->predicates[i].type == 1) { //filter predicate
-                check(execute_filter(&q->predicates[i], q->relations, metadata_arr, mid_results_array) != -1, "");
+            if( q.predicates[i].type == 1) { //filter predicate
+                mid_results_array = execute_filter(&q.predicates[i], q.relations, metadata_arr, mid_results_array);
             } else {    //join predicate
-                check(execute_join(&q->predicates[i], q->relations, metadata_arr, mid_results_array, pool) != -1, "Join failed!");
+                mid_results_array = execute_join(&q.predicates[i], q.relations, metadata_arr, mid_results_array, pool);
             }
         }
 
-        print_sums(mid_results_array, q->relations, metadata_arr, q->selects, q->select_size);
+        print_sums(mid_results_array, q.relations, metadata_arr, q.selects, q.select_size);
 
-        for (size_t j = 0 ; j < DArray_count(mid_results_array) ; j++) {
-            DArray *mid_results = *(DArray **) DArray_get(mid_results_array, j);
-            for (size_t i = 0 ; i < DArray_count(mid_results) ; i++) {
-                mid_result *res = (mid_result *) DArray_get(mid_results, i);
-                DArray_destroy(res->tuples);
-            }    
-            DArray_destroy(mid_results);
+        for (size_t j = 0 ; j < buf_len(mid_results_array) ; j++) {
+            for (size_t i = 0 ; i < buf_len(mid_results_array[j]) ; i++) {
+                buf_free(mid_results_array[j][i].payloads);
+            }
+            buf_free(mid_results_array[j]);
         }
-        DArray_destroy(mid_results_array);
+        buf_free(mid_results_array);
 
         return 0;
 
@@ -210,15 +205,17 @@ void print_select(relation_column* r_c, size_t size){
     }
 
 
-    void execute_queries(DArray *q_list, DArray *metadata_arr, thr_pool_t *pool) {
+    void execute_queries(query *q_list, metadata *metadata_arr, thr_pool_t *pool) {
 
-        for (size_t i = 0; i < DArray_count(q_list); i++) {
+        thr_pool_t *inner_pool = thr_pool_create(4);
 
-            query *tmp_data = (query*) DArray_get(q_list, i);
+        for (size_t i = 0; i < buf_len(q_list); i++) {
 
-           // arrange_predicates(tmp_data, metadata_arr);
+            query qry = q_list[i];
+            arrange_predicates(&qry);
+            //print_predicates(qry.predicates, qry.predicates_size);
 
-            execute_query(tmp_data , metadata_arr, pool);
+            execute_query(qry , metadata_arr, inner_pool);
         }
     }
 #else
@@ -227,19 +224,19 @@ void print_select(relation_column* r_c, size_t size){
     
         exec_query_args *args = (exec_query_args *) arg;
 
-        query *qry = args->qry;
+        query qry = args->qry;
        
-        arrange_predicates(qry);
-        //print_predicates(qry->predicates, qry->predicates_size);
+        arrange_predicates(&qry);
+        //print_predicates(qry.predicates, qry.predicates_size);
 
         mid_result **mid_results_array = NULL;
 
-        for (size_t i = 0 ; i < (size_t) qry->predicates_size ; i++) {
-            if (qry->predicates[i].type == 0) {
-                mid_results_array = execute_join(&qry->predicates[i], qry->relations, args->metadata_arr, mid_results_array, args->pool);
+        for (size_t i = 0 ; i < (size_t) qry.predicates_size ; i++) {
+            if (qry.predicates[i].type == 0) {
+                mid_results_array = execute_join(&(qry.predicates[i]), qry.relations, args->metadata_arr, mid_results_array, args->pool);
             }
             else {
-                mid_results_array = execute_filter(&qry->predicates[i], qry->relations, args->metadata_arr, mid_results_array);
+                mid_results_array = execute_filter(&(qry.predicates[i]), qry.relations, args->metadata_arr, mid_results_array);
             }
         }
         args->mid_results_arrays[args->job_id] = mid_results_array;
@@ -257,7 +254,7 @@ void print_select(relation_column* r_c, size_t size){
 
         for (size_t i = 0; i < buf_len(q_list); i++) {
 
-            query *current = &(q_list[i]);
+            query current = q_list[i];
 
             exec_query_args *args = MALLOC(exec_query_args, 1);
             args->metadata_arr = metadata_arr;

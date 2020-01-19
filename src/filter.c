@@ -5,6 +5,7 @@
 
 static void exec_filter_rel_exists(predicate *pred , relation* rel , uint64_t number , mid_result *mid_res) {  
 
+    printf("rel_num_tuples = %d\n", rel->num_tuples);
     for(size_t i = 0 ; i <  buf_len(mid_res->payloads) ; i++) {   
     
         uint64_t payload = mid_res->payloads[i];
@@ -30,35 +31,33 @@ static void exec_filter_rel_exists(predicate *pred , relation* rel , uint64_t nu
     }
 }
 
-static uint64_t* exec_filter_rel_no_exists(predicate *pred,relation* rel , uint64_t number ,uint64_t **payloas) {
+static void exec_filter_rel_no_exists(predicate *pred,relation* rel , uint64_t number ,uint64_t **payloads) {
 
-    uint64_t *payloads = NULL;
     for (size_t i = 0 ; i < rel->num_tuples; i++) {
         
         //if the tuple satisfies the filter push it in the dynamic array of the payloads
         if ( pred->operator == EQ){
             if (rel->tuples[i].key == number) {
-                buf_push(payloads, rel->tuples[i].payload);
+                buf_push((*payloads), rel->tuples[i].payload);
             }
         }
         else if (pred->operator == G) {
             if (rel->tuples[i].key > number) {
-                buf_push(payloads, rel->tuples[i].payload);
+                buf_push((*payloads), rel->tuples[i].payload);
             }
         }
         else if (pred->operator == L) {
             if (rel->tuples[i].key < number ) {
-                buf_push(payloads, rel->tuples[i].payload);  
+                buf_push((*payloads), rel->tuples[i].payload);  
             }
         }
     }
-    return payloads;
 }
 
 mid_result** execute_filter(predicate *pred, uint32_t *relations, metadata *metadata_arr, mid_result **mid_results_array) {
 
-    metadata *tmp_data = &(metadata_arr[relations[pred->first.relation]]);
-    relation *rel = tmp_data->data[pred->first.column];
+    metadata tmp_data = metadata_arr[relations[pred->first.relation]];
+    relation *rel = tmp_data.data[pred->first.column];
     uint64_t *number = (uint64_t*) pred->second; 
 
     exists_info exists = relation_exists(mid_results_array, relations[pred->first.relation], pred->first.relation);
@@ -80,17 +79,19 @@ mid_result** execute_filter(predicate *pred, uint32_t *relations, metadata *meta
             buf_free(to_destroy);
         }
     } else {
-        mid_result *mid_results = NULL;
         mid_result res;
         res.relation = relations[pred->first.relation];
         res.predicate_id = pred->first.relation;
         res.last_column_sorted = -1;
+
+        buf_push(mid_results_array, NULL);
         
         if (pred->operator != SELF_JOIN) {
+            
+            res.payloads = NULL;
+            exec_filter_rel_no_exists(pred, rel, *number, &res.payloads);
 
-            res.payloads = exec_filter_rel_no_exists(pred, rel, *number, &res.payloads);
-
-            buf_push(mid_results, res);
+            buf_push(mid_results_array[buf_len(mid_results_array) - 1], res);
         }
         else {
             relation_column rel_col = *(relation_column *) pred->second;
@@ -100,12 +101,8 @@ mid_result** execute_filter(predicate *pred, uint32_t *relations, metadata *meta
             join_result join_res = scan_join(rel, rel_s);
             res.payloads = join_res.results[0];
             
-            buf_push(mid_results, res);
+            buf_push(mid_results_array[buf_len(mid_results_array) - 1], res);
         }
-
-        //printf("mid_results = %p\n", mid_results);
-        buf_push(mid_results_array, mid_results);
-
     }
 
     return mid_results_array;

@@ -127,7 +127,8 @@ static void parse_select(char* string, query *q) {
 }
 
 query* parser() {
-    query* queries = NULL;
+    
+    query *query_list = NULL;
 
     char* line_ptr = NULL;
     size_t n = 0;
@@ -136,7 +137,7 @@ query* parser() {
     while ((characters = getline(&line_ptr, &n, stdin)) != -1) {
         
         if (line_ptr[0] == 'F') {
-            break;
+            continue;
         }
         char relations[128], predicates[128], select[128];
 
@@ -149,10 +150,10 @@ query* parser() {
         
         parse_select(select,  &new_query);
         
-        buf_push(queries, new_query);
+        buf_push(query_list, new_query);
     }
 
     FREE(line_ptr);
-    return queries;
+    return query_list;
 
 }

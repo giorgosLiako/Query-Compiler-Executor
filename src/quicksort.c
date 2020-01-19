@@ -167,7 +167,10 @@ void iterative_sort(relation *rel, queue_node **retval, uint32_t *jobs_created, 
             }
             check_queue = false;
         }
-        if (!(number_of_buckets > 0) || (number_of_buckets / MAX_JOBS) > 0) {
+        /*if (!(number_of_buckets > 0) || (number_of_buckets / MAX_JOBS) > 0) {
+            break;
+        }*/
+        if (!(number_of_buckets > 0)) {
             break;
         }
 
