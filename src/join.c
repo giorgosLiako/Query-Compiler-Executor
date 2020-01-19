@@ -275,6 +275,8 @@ mid_result** execute_join(predicate *pred, uint32_t *relations, metadata *metada
 
     update_mid_results(mid_results_array, metadata_arr, info);
 
+    FREE(rel[0]->tuples->tuples);
+    FREE(rel[1]->tuples->tuples);
     FREE(rel[0]->tuples);
     FREE(rel[1]->tuples);
     if (rel[0]->queue) {

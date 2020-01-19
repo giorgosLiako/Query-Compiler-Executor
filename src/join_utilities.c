@@ -259,9 +259,7 @@ static void fix_all_mid_results(mid_result **mid_results_array, ssize_t mid_resu
         for (size_t j = 0 ; j < buf_len(join_payloads) ; j++) {
             buf_push(mid_results_array[mid_result_index][i].payloads, old_payloads[join_payloads[j]]);
         }
-        
-        //printf("new_mid_results_payloads = %d\n", buf_len(mid_results_array[mid_result_index][i].payloads));
-        
+            
         buf_free(old_payloads);
     }
     if (!is_scan) {
@@ -291,11 +289,13 @@ void update_mid_results(mid_result **mid_results_array, metadata *metadata_arr, 
         exists_info exists_r = relation_exists(mid_results_array, info.relR, info.predR_id);
         if (exists_r.index != -1) {
             fix_all_mid_results(mid_results_array, exists_r.mid_result, exists_r.index, &tmp_R ,info.join_res.results[0], 0);
+            buf_free(tmp_R.payloads);
         }
 
         exists_info exists_s = relation_exists(mid_results_array, info.relS, info.predS_id);
         if (exists_s.index != -1) {
             fix_all_mid_results(mid_results_array, exists_s.mid_result, exists_s.index, &tmp_S ,info.join_res.results[1], 0);
+            buf_free(tmp_S.payloads);
         }
 
         if (exists_r.index == -1) {
@@ -310,6 +310,7 @@ void update_mid_results(mid_result **mid_results_array, metadata *metadata_arr, 
         exists_info exists_r = relation_exists(mid_results_array, info.relR, info.predR_id);
         if (exists_r.index != -1) {
             fix_all_mid_results(mid_results_array, exists_r.mid_result, exists_r.index, &tmp_R, info.join_res.results[0], 0);
+            buf_free(tmp_R.payloads);
         }
 
         exists_info exists_s = relation_exists(mid_results_array, info.relS, info.predS_id);
@@ -320,6 +321,8 @@ void update_mid_results(mid_result **mid_results_array, metadata *metadata_arr, 
 
         fix_all_mid_results(mid_results_array, exists_s.mid_result, exists_s.index, &tmp_S, info.join_res.results[1], 0);
 
+        buf_free(tmp_S.payloads);
+
         if (exists_r.index == -1) {
             buf_push(mid_results_array[buf_len(mid_results_array) - 1], tmp_R);
         }
@@ -329,6 +332,7 @@ void update_mid_results(mid_result **mid_results_array, metadata *metadata_arr, 
         exists_info exists_s = relation_exists(mid_results_array, info.relS, info.predS_id);
         if (exists_s.index != -1) {
             fix_all_mid_results(mid_results_array, exists_s.mid_result, exists_s.index, &tmp_S, info.join_res.results[1], 0);
+            buf_free(tmp_S.payloads);
         }
 
         exists_info exists_r = relation_exists(mid_results_array, info.relR, info.predR_id);
@@ -338,9 +342,13 @@ void update_mid_results(mid_result **mid_results_array, metadata *metadata_arr, 
         }
 
         fix_all_mid_results(mid_results_array, exists_r.mid_result, exists_r.index, &tmp_R, info.join_res.results[0], 0);
+        buf_free(tmp_R.payloads);
 
         if (exists_s.index == -1) {
             buf_push(mid_results_array[buf_len(mid_results_array) - 1], tmp_S);
+        }
+        else {
+            buf_free(tmp_S.payloads);
         }
     }
     else if (join_id == SCAN_JOIN) {
@@ -352,5 +360,6 @@ void update_mid_results(mid_result **mid_results_array, metadata *metadata_arr, 
         }
 
         fix_all_mid_results(mid_results_array, exists.mid_result, -1, NULL, info.join_res.results[0], 1);
+        buf_free(info.join_res.results[0]);
     }
 }
