@@ -49,7 +49,11 @@ int main() {
     metadata *metadata_arr = read_relations();
     check_mem(metadata_arr);
 
-    thr_pool_t *pool = thr_pool_create(4);
+    #ifdef MULTITHREADING
+        thr_pool_t *pool = thr_pool_create(4);
+    #else
+        thr_pool_t *pool = NULL;
+    #endif
 
     while (1) {
         query *query_list = parser();
@@ -62,7 +66,9 @@ int main() {
         free_query_list(query_list);
     }
 
-    thr_pool_destroy(pool);
+    #ifdef MULTITHREADING
+        thr_pool_destroy(pool);
+    #endif
 
     free_metadata_array(metadata_arr);
     

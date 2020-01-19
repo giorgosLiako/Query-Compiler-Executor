@@ -167,12 +167,16 @@ void iterative_sort(relation *rel, queue_node **retval, uint32_t *jobs_created, 
             }
             check_queue = false;
         }
-        /*if (!(number_of_buckets > 0) || (number_of_buckets / MAX_JOBS) > 0) {
-            break;
-        }*/
-        if (!(number_of_buckets > 0)) {
-            break;
-        }
+        
+        #ifdef MULTITHREADING
+            if (!(number_of_buckets > 0) || (number_of_buckets / MAX_JOBS) > 0) {
+                break;
+            }
+        #else
+            if (!(number_of_buckets > 0)) {
+                break;
+            }
+        #endif
 
         //the size of the queue is the number of the buckets
         while (number_of_buckets) { //for each bucket

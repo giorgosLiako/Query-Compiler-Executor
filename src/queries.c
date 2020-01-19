@@ -207,13 +207,16 @@ void print_select(relation_column* r_c, size_t size){
 
     void execute_queries(query *q_list, metadata *metadata_arr, thr_pool_t *pool) {
 
-        thr_pool_t *inner_pool = thr_pool_create(4);
+        #ifdef MULTITHREADING
+            thr_pool_t *inner_pool = thr_pool_create(4);
+        #else   
+            thr_pool_t *inner_pool = NULL;
+        #endif
 
         for (size_t i = 0; i < buf_len(q_list); i++) {
 
             query qry = q_list[i];
             arrange_predicates(&qry);
-            //print_predicates(qry.predicates, qry.predicates_size);
 
             execute_query(qry , metadata_arr, inner_pool);
         }
