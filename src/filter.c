@@ -33,6 +33,7 @@ static void exec_filter_rel_exists(predicate *pred , relation* rel , uint64_t nu
 
 static void exec_filter_rel_no_exists(predicate *pred,relation* rel , uint64_t number ,uint64_t **payloads) {
 
+    printf("number = %lu\n", number);
     for (size_t i = 0 ; i < rel->num_tuples; i++) {
         
         //if the tuple satisfies the filter push it in the dynamic array of the payloads
