@@ -30,23 +30,23 @@ static void exec_filter_rel_exists(predicate *pred , relation* rel , uint64_t nu
     }
 }
 
-static void exec_filter_rel_no_exists(predicate *pred,relation* rel , uint64_t number ,uint64_t **payloads) {
+static void exec_filter_rel_no_exists(predicate *pred,relation* rel , uint64_t *number ,uint64_t **payloads) {
 
     for (size_t i = 0 ; i < rel->num_tuples; i++) {
         
         //if the tuple satisfies the filter push it in the dynamic array of the payloads
         if ( pred->operator == EQ){
-            if (rel->tuples[i].key == number) {
+            if (rel->tuples[i].key == *number) {
                 buf_push((*payloads), rel->tuples[i].payload);
             }
         }
         else if (pred->operator == G) {
-            if (rel->tuples[i].key > number) {
+            if (rel->tuples[i].key > *number) {
                 buf_push((*payloads), rel->tuples[i].payload);
             }
         }
         else if (pred->operator == L) {
-            if (rel->tuples[i].key < number ) {
+            if (rel->tuples[i].key < *number ) {
                 buf_push((*payloads), rel->tuples[i].payload);  
             }
         }
@@ -88,7 +88,7 @@ mid_result** execute_filter(predicate *pred, uint32_t *relations, metadata *meta
         if (pred->operator != SELF_JOIN) {
             
             res.payloads = NULL;
-            exec_filter_rel_no_exists(pred, rel, *number, &res.payloads);
+            exec_filter_rel_no_exists(pred, rel, number, &res.payloads);
 
             buf_push(mid_results_array[buf_len(mid_results_array) - 1], res);
         }

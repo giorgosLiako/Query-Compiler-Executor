@@ -215,8 +215,6 @@ mid_result** execute_join(predicate *pred, uint32_t *relations, metadata *metada
 */
 
     int retval = build_relations(pred, relations, metadata_arr, &mid_results_array, rel);
-
-   // printf("about to join %d and %d\n", rel[0]->tuples->num_tuples, rel[1]->tuples->num_tuples);
     
     join_result join_res;
 
@@ -257,8 +255,6 @@ mid_result** execute_join(predicate *pred, uint32_t *relations, metadata *metada
     else {
         join_res = join_relations_single_threaded(rel[0]->tuples, rel[1]->tuples);
     }
-
-   // printf("join returned %d and %d\n", buf_len(join_res.results[0]), buf_len(join_res.results[1]));
 
     join_info info;
 

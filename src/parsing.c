@@ -70,7 +70,7 @@ static void parse_predicates(char *string, query *q) {
             first.relation = v1;
             first.column = v2;
 
-            uint32_t *second = MALLOC(uint32_t, 1);
+            uint64_t *second = MALLOC(uint64_t, 1);
             *second = v3;
 
             predicates[i].type = 1;
@@ -137,7 +137,7 @@ query* parser() {
     while ((characters = getline(&line_ptr, &n, stdin)) != -1) {
         
         if (line_ptr[0] == 'F') {
-            continue;
+            break;
         }
         char relations[128], predicates[128], select[128];
 
