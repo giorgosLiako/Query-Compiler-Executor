@@ -79,6 +79,7 @@ void *join_job(void *args) {
     uint64_t *results_r = NULL;
     uint64_t *results_s = NULL;
 
+    size_t found = 0;
     for (ssize_t i = argm->start ; i < argm->end ; i++) {
         queue_node qnode_R = argm->queue_R[argm->indices_to_check[0][i]];
         queue_node qnode_S = argm->queue_S[argm->indices_to_check[1][i]];
@@ -105,6 +106,7 @@ void *join_job(void *args) {
                     }
                 }
                 else {
+                    found++;
                     buf_push(results_r, relR->tuples[pr].payload);
                     buf_push(results_s, relS->tuples[ps].payload);
                     
@@ -143,6 +145,7 @@ join_result join_relations(relation *relR, relation *relS, queue_node *queue_R, 
             }
         }
     }   
+
     join_arguments *params = MALLOC(join_arguments, jobs_to_create);
     for (ssize_t i = 0 ; i < jobs_to_create ; i++) {
         
@@ -202,6 +205,26 @@ bool is_sorted(relation *rel) {
     return true;
 }
 
+typedef struct sort_call_arguments {
+    relation *rel;
+    queue_node **queue;
+    uint32_t *jobs_to_create;
+    thr_pool_t *pool;
+} sort_call_arguments;
+
+void* iterative_sort_job(void *argm) {
+    
+    sort_call_arguments *arg = (sort_call_arguments *) argm;
+
+    relation *rel = arg->rel;
+    queue_node **queue = arg->queue;
+    uint32_t *jobs_to_create = arg->jobs_to_create;
+    thr_pool_t *pool = arg->pool;
+
+    iterative_sort(rel, queue, jobs_to_create, pool);
+    return NULL;
+}
+
 mid_result** execute_join(predicate *pred, uint32_t *relations, metadata *metadata_arr, mid_result **mid_results_array, thr_pool_t *pool) {
 
     rel_info *rel[2];
@@ -225,29 +248,58 @@ mid_result** execute_join(predicate *pred, uint32_t *relations, metadata *metada
     uint32_t first_column = pred->first.column;
     uint32_t second_column =  ((relation_column *) pred->second)->column;
 
-    if (retval == CLASSIC_JOIN) {
-        iterative_sort(rel[0]->tuples, &(rel[0]->queue), &(rel[0]->jobs_to_create), pool);
-        iterative_sort(rel[1]->tuples, &(rel[1]->queue), &(rel[1]->jobs_to_create), pool);
-    }
-    else if (retval == JOIN_SORT_LHS) {
-        iterative_sort(rel[0]->tuples, &(rel[0]->queue), &(rel[0]->jobs_to_create), pool);
-        create_new_queue(rel[1]->tuples, &(rel[1]->queue), &(rel[1]->jobs_to_create));
-    }
-    else if (retval == JOIN_SORT_RHS) {
-        iterative_sort(rel[1]->tuples, &(rel[1]->queue), &(rel[1]->jobs_to_create), pool);
-        create_new_queue(rel[0]->tuples, &(rel[0]->queue), &(rel[0]->jobs_to_create));
-    }
-    else if (retval == SCAN_JOIN) {
-        rel[0]->queue = NULL;
-        rel[1]->queue = NULL;
+    #ifndef MULTITHREAD_SORT_CALL
+
+        if (retval != SCAN_JOIN) {
+            iterative_sort(rel[0]->tuples, &(rel[0]->queue), &(rel[0]->jobs_to_create), pool);
+            iterative_sort(rel[1]->tuples, &(rel[1]->queue), &(rel[1]->jobs_to_create), pool);
+        }
+        else if (retval == SCAN_JOIN) {
+            rel[0]->queue = NULL;
+            rel[1]->queue = NULL;
+            
+            join_res = scan_join(rel[0]->tuples, rel[1]->tuples);
+            buf_free(join_res.results[1]);
+            goto scan_joined;
+        }
+        else {
+            return NULL;
+        }
+    #else
         
-        join_res = scan_join(rel[0]->tuples, rel[1]->tuples);
-        buf_free(join_res.results[1]);
-        goto scan_joined;
-    }
-    else {
-        return NULL;
-    }
+        if (retval != SCAN_JOIN) {
+            thr_pool_t *temp_pool = thr_pool_create(2);
+            sort_call_arguments *args = MALLOC(sort_call_arguments, 2);
+
+            args[0].rel = rel[0]->tuples;
+            args[0].queue = &(rel[0]->queue);
+            args[0].jobs_to_create = &(rel[0]->jobs_to_create);
+            args[0].pool = pool;
+
+            args[1].rel = rel[1]->tuples;
+            args[1].queue = &(rel[1]->queue);
+            args[1].jobs_to_create = &(rel[1]->jobs_to_create);
+            args[1].pool = pool;
+
+            thr_pool_queue(temp_pool, iterative_sort_job, &(args[0]));
+            thr_pool_queue(temp_pool, iterative_sort_job, &(args[1]));
+
+            thr_pool_barrier(temp_pool);
+
+            thr_pool_destroy(temp_pool);
+        }
+        else if (retval == SCAN_JOIN) {
+            rel[0]->queue = NULL;
+            rel[1]->queue = NULL;
+            
+            join_res = scan_join(rel[0]->tuples, rel[1]->tuples);
+            buf_free(join_res.results[1]);
+            goto scan_joined;
+        }
+        else {
+            return NULL;
+        }
+    #endif
 
     uint32_t jobs_to_create = rel[0]->jobs_to_create < rel[1]->jobs_to_create ? rel[0]->jobs_to_create : rel[1]->jobs_to_create;
 

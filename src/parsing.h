@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "DArray.h"
 #include "structs.h"
 #include "queries.h"
 #include "filter.h"

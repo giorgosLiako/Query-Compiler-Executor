@@ -167,8 +167,8 @@ void iterative_sort(relation *rel, queue_node **retval, uint32_t *jobs_created, 
             }
             check_queue = false;
         }
-        
-        #ifdef MULTITHREADING
+
+        #ifdef MULTITHREAD_SORT
             if (!(number_of_buckets > 0) || (number_of_buckets / MAX_JOBS) > 0) {
                 break;
             }
