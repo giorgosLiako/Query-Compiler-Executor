@@ -179,7 +179,7 @@ void print_select(relation_column* r_c, size_t size){
 }
 
 
-#ifndef MULTITHREADING
+#ifndef MULTITHREAD_QUERIES 
     static int execute_query(query q , metadata* metadata_arr, thr_pool_t *pool) {
 
         mid_result **mid_results_array = NULL;
@@ -257,7 +257,7 @@ void print_select(relation_column* r_c, size_t size){
 
         exec_query_args **args_array = MALLOC(exec_query_args *, buf_len(q_list));
 
-        thr_pool_t *inner_pool = thr_pool_create(4);
+        thr_pool_t *inner_pool = thr_pool_create(2);
 
         mid_result ***mid_results_arrays = MALLOC(mid_result **, buf_len(q_list));
 

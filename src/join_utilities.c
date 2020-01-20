@@ -2,105 +2,6 @@
 #include "quicksort.h"
 #include "stretchy_buffer.h"
 
-void create_new_queue(relation *rel, queue_node **retval, uint32_t *jobs_created) {
-	
-    relation *reordered = allocate_reordered_array(rel);
-    queue_node *q = NULL;
-
-    relation *relations[2]; //to swap after each iteration
-
-    histogram new_h, new_p;
-    //build the first histogram and the first psum ( of all the array)
-    build_histogram(rel, &new_h, 1, 0, rel->num_tuples);
-    build_psum(&new_h, &new_p);
-    //build the R' (reordered R)
-    reordered = build_reordered_array(reordered, rel, &new_h, &new_p, 1, 0, rel->num_tuples);
-    
-    relations[0] = rel;
-    relations[1] = reordered;
-
-    //the byte take the values [0-255] , each value is a bucket
-    //each bucket that found push it in the queue
-    queue_node *q_to_return = NULL;
-    for (ssize_t j = 0; j < 256; j++) {
-        if (new_h.array[j] != 0) {
-            queue_node q_node;
-            q_node.byte = j;
-            q_node.base = new_p.array[j];
-            q_node.size = new_h.array[j];
-            buf_push(q, q_node);
-        }
-    }
-    ssize_t i;
-    int number_of_buckets = 0;
-    //above we execute the routine for the first byte
-    //now for all the other bytes
-    for (i = 2; i <= 8 ; i++) {
-        
-        number_of_buckets = buf_len(q);
-        if (number_of_buckets >= 2) {
-            for (ssize_t tmp_i = 0 ; tmp_i < buf_len(q) ; tmp_i++) {
-                queue_node q_node = q[tmp_i];
-				buf_push(q_to_return, q_node);
-            }
-			break;
-        }
-
-        //the size of the queue is the number of the buckets
-        while (number_of_buckets) { //for each bucket
-    
-            queue_node *current_item = &(q[0]);
-            ssize_t base = current_item->base, size = current_item->size; // base = start of bucket , size = the number of cells of the bucket
-            buf_remove(q, 0);
-          
-            number_of_buckets--;
-            //check if the bucket is smaller than 32 KB to execute quicksort
-            if ( size*sizeof(tuple) + sizeof(uint64_t) >= 32*1024) {
-				// if the bucket is bigger than 32 KB , sort by the next byte
-                histogram new_h, new_p;
-                //build again histogram and psum of the next byte
-                build_histogram(relations[(i+1)%2], &new_h, i, base, size);
-                build_psum(&new_h, &new_p);
-                //build the reordered array of the previous bucket
-                relations[i%2] = build_reordered_array(relations[i%2], relations[(i+1)%2], &new_h, &new_p, i, base, size);
-    
-                //push the buckets to the queue
-                for (ssize_t j = 0; j < 256 && i != 8; j++) {
-                    if (new_h.array[j] != 0) {
-                        queue_node q_node;
-                        q_node.byte = j;
-                        q_node.base = base + new_p.array[j];
-                        q_node.size = new_h.array[j];
-                        buf_push(q, q_node);
-                    }
-                }
-			}
-        }
-    }
-	number_of_buckets = buf_len(q);
-    //If it wasn't yet sorted, try multithreading
-    if ((number_of_buckets / MAX_JOBS) > 0) {
-        
-        uint32_t jobs_to_create;
-
-        if (number_of_buckets / MAX_JOBS > 20) {
-            jobs_to_create = MAX_JOBS;
-        }
-        else {
-            jobs_to_create = 2;
-        }
-        *jobs_created = jobs_to_create;
-    }
-    else {
-        *jobs_created = 0;
-    }
-	*retval = q_to_return;
-
-    FREE(reordered->tuples);
-    FREE(reordered);
-	buf_free(q);
-}
-
 static void allocate_relation_mid_results(rel_info *rel_arr[], mid_result mid_res, tuple *tuples, ssize_t rel_arr_index) {
 
     relation *temp_rel = MALLOC(relation, 1);
@@ -244,6 +145,8 @@ void update_mid_results(mid_result **mid_results_array, metadata *metadata_arr, 
     tmp_S.predicate_id = info.predS_id;
 
     int join_id = info.join_id;
+
+    /*Debug that in work_tmp*/
 
     if (join_id == CLASSIC_JOIN) {
         exists_info exists_r = relation_exists(mid_results_array, info.relR, info.predR_id);

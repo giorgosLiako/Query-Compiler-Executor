@@ -13,8 +13,6 @@
 #include "../src/thr_pool.h"
 #include "../src/stretchy_buffer.h"
 
-#define MAX_THREADS 4
-
 static void free_query_list(query *query_list) {
    
    for (size_t i = 0 ; i < buf_len(query_list); i++) {
@@ -49,8 +47,8 @@ int main() {
     metadata *metadata_arr = read_relations();
     check_mem(metadata_arr);
 
-    #ifdef MULTITHREADING
-        thr_pool_t *pool = thr_pool_create(4);
+    #ifdef MULTITHREAD_QUERIES 
+        thr_pool_t *pool = thr_pool_create(2);
     #else
         thr_pool_t *pool = NULL;
     #endif
