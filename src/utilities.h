@@ -14,7 +14,6 @@
 #include <math.h>
 #include "alloc_free.h"
 #include "dbg.h"
-#include "DArray.h"
 #include "structs.h"
 #include "queries.h"
 

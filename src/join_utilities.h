@@ -8,7 +8,6 @@
 #define DO_NOTHING 5
 
 #include "join.h"
-#include "DArray.h"
 #include "structs.h"
 #include "queries.h"
 

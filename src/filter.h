@@ -2,7 +2,6 @@
 #define FILTER_H
 
 #include "queries.h"
-#include "DArray.h"
 #include "utilities.h"
 #include "queries.h"
 

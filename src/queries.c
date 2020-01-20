@@ -102,18 +102,24 @@ void print_predicates(predicate* predicates, size_t size);
 void arrange_predicates(query *qry, metadata *meta) {
 
     ssize_t index = group_filters(qry);
-
-   //update_statistics(qry, meta);
-   int null_join = 0;
-   print_predicates(&(qry->predicates[index]), qry->predicates_size-index);
-   predicate *res = dp_linear(qry->relations_size, &(qry->predicates[index]), qry->predicates_size - index, meta, &null_join);
-
-    for (size_t i = index; i < qry->predicates_size; i++)
-   {
-       qry->predicates[i] = res[i-index];
-   }
-      print_predicates(qry->predicates, qry->predicates_size);
     
+    update_statistics(qry, meta);
+    int null_join = 0;
+    //print_predicates(&(qry->predicates[index]), qry->predicates_size-index);
+    predicate *res = dp_linear(qry->relations, qry->relations_size, &(qry->predicates[index]), qry->predicates_size - index, meta, &null_join);
+
+        //print_predicates(res, qry->predicates_size - index);
+
+    for (ssize_t i = index; i < qry->predicates_size; i++) {
+        
+        qry->predicates[i] = res[i-index];
+    }
+        //print_predicates(qry->predicates, qry->predicates_size);
+        
+    if (null_join)
+    {
+        //TODO
+    }
     
     
 

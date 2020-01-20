@@ -84,6 +84,7 @@ static inline void fill_data(metadata *m_data, uint64_t *mapped_file) {
     
     m_data->tuples = *mapped_file++;
     m_data->columns = *mapped_file++;
+    //printf("tuples = %lu, columns = %lu\n", m_data->tuples, m_data->columns);
     m_data->data = MALLOC(relation *, m_data->columns);
 
     for (size_t j = 0 ; j < m_data->columns ; j++) {
@@ -110,6 +111,7 @@ static inline void fill_data(metadata *m_data, uint64_t *mapped_file) {
                 }
             } 
         }
+        //printf("rel = %p, column = %d, %lu %lu \n", rel, j, max_value, min_value);
         bool is_smaller = false;
         if (max_value - min_value + 1 <= N) {
             is_smaller = true;
@@ -141,7 +143,7 @@ static inline void fill_data(metadata *m_data, uint64_t *mapped_file) {
     }
 }
 
-static void update_non_eq(uint32_t k1, uint32_t k2, relation *rel) {
+static void update_non_eq(uint64_t k1, uint64_t k2, relation *rel) {
     
     if (k1 < rel->stats->min_value) {
         k1 = rel->stats->min_value;
@@ -151,9 +153,10 @@ static void update_non_eq(uint32_t k1, uint32_t k2, relation *rel) {
     }
 
     if (rel->stats->max_value - rel->stats->min_value > 0) {
-        rel->stats->distinct_values *= (k2 - k1) / (rel->stats->max_value - rel->stats->min_value);
-        rel->stats->approx_elements *= (k2 - k1) / (rel->stats->max_value - rel->stats->min_value);
+        rel->stats->distinct_values = (rel->stats->distinct_values * (k2 - k1)) / (rel->stats->max_value - rel->stats->min_value);
+        rel->stats->approx_elements = (rel->stats->approx_elements * (k2 - k1)) / (rel->stats->max_value - rel->stats->min_value);
     }
+    
     rel->stats->min_value = k1;
     rel->stats->max_value = k2;
 }
@@ -194,6 +197,7 @@ void update_statistics(query *qry, metadata *metadata_arr) {
             metadata *md = &(metadata_arr[row]);
             relation *rel = md->data[column];
 
+
             bool found = false;
             
             size_t approx_elements = rel->stats->approx_elements;
@@ -224,8 +228,8 @@ void update_statistics(query *qry, metadata *metadata_arr) {
                         break;
                     }
                     else if (current.first.relation == tmp.first.relation && current.first.column == tmp.first.column) {
-                        uint32_t k1 = *(uint32_t *) current.second;
-                        uint32_t k2 = *(uint32_t *) tmp.second;
+                        uint64_t k1 = *(uint64_t *) current.second;
+                        uint64_t k2 = *(uint64_t *) tmp.second;
 
                         if ((current.operator == LEQ && tmp.operator == GEQ) || (current.operator == L && tmp.operator == G)) {
                             /*If its tmp >= k2, current <= k1, make it tmp <= k2, current >= k1*/
@@ -242,15 +246,15 @@ void update_statistics(query *qry, metadata *metadata_arr) {
                 }
                 if (!found && (current.operator == LEQ || current.operator == L)) {
                     /*We have only filter of type R.A < 5000, set k1 to be min*/
-                    uint32_t k1 = rel->stats->min_value;
-                    uint32_t k2 = *(uint32_t *) current.second;
+                    uint64_t k1 = rel->stats->min_value;
+                    uint64_t k2 = *(uint64_t *) current.second;
 
                     update_non_eq(k1, k2, rel);
                 }
                 else if (!found && (current.operator == GEQ || current.operator == G)) {
-                    uint32_t k1 = *(uint32_t *) current.second;
-                    uint32_t k2 = rel->stats->max_value;
-
+                    uint64_t k1 = *(uint64_t *) current.second;
+                    uint64_t k2 = rel->stats->max_value;
+                    //printf("%lu %lu \n", k1 , k2);
                     update_non_eq(k1, k2, rel);
                 }
             }
