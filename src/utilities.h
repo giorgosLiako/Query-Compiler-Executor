@@ -37,4 +37,6 @@ exists_info relation_exists(mid_result **mid_results_array, uint64_t relation, u
 
 ssize_t relation_exists_current(mid_result *mid_results, uint64_t relation, uint64_t predicate_id);
 
+void update_statistics(query *qry, metadata *metadata_arr);
+
 #endif

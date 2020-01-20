@@ -184,8 +184,6 @@ static void update_other_columns(ssize_t column, ssize_t approx_elements, metada
 
 void update_statistics(query *qry, metadata *metadata_arr) {
 
-    printf("I GOT CALLED\n");
-
     for (ssize_t i = 0 ; i < qry->predicates_size ; i++) {
         predicate current = qry->predicates[i];
         if (current.type == 1) {
@@ -201,7 +199,7 @@ void update_statistics(query *qry, metadata *metadata_arr) {
             size_t approx_elements = rel->stats->approx_elements;
 
             if (current.operator == EQ) {
-                uint32_t number = *(uint32_t *) current.second;
+                uint64_t number = *(uint64_t *) current.second;
                             
                 if ( (number - rel->stats->min_value) <= rel->stats->array_size && rel->stats->array[number - rel->stats->min_value]) {
                     rel->stats->approx_elements = approx_elements / rel->stats->distinct_values;
@@ -291,59 +289,6 @@ void update_statistics(query *qry, metadata *metadata_arr) {
                 }
             }
             update_other_columns(column, approx_elements, md, rel);
-       }
-       else if (current.type == 0) {
-         /*   uint32_t first_relation = qry->relations[current.first.relation];
-            uint32_t first_column = current.first.column;
-            uint32_t second_relation = qry->relations[((relation_column *) current.second)->relation];
-            uint32_t second_column = ((relation_column *) current.second)->column;
-            
-            metadata *md_A = (metadata *) DArray_get(metadata_arr, first_relation);
-            metadata *md_B = (metadata *) DArray_get(metadata_arr, second_relation);
-            relation *relA = md_A->data[first_column];
-            relation *relB = md_B->data[second_column];
-
-            relation *max_min_rel = relA->stats->min_value > relB->stats->min_value ? relA : relB;
-            relation *min_max_rel = relA->stats->max_value < relB->stats->max_value ? relA : relB;
-
-            uint32_t k1, k2;
-            k1 = max_min_rel->stats->min_value;
-            k2 = min_max_rel->stats->max_value;
-
-            relA->stats->min_value = relB->stats->min_value = k1;
-            relA->stats->max_value = relB->stats->max_value = k2;
-
-            size_t tmp_distinctA = relA->stats->distinct_values;
-            size_t tmp_distinctB = relB->stats->distinct_values;
-            size_t tmp_approxA = relA->stats->approx_elements;
-            size_t tmp_approxB = relB->stats->approx_elements;
-
-            size_t n = k2 - k1 + 1;
-            relA->stats->approx_elements = relB->stats->approx_elements = (tmp_approxA * tmp_approxB) / n;
-            relA->stats->distinct_values = relB->stats->distinct_values = (tmp_distinctA * tmp_distinctB) / n;
-
-            for (ssize_t tmp_i = 0 ; tmp_i < md_A->columns; tmp_i++) {
-                if (tmp_i != first_column) {
-                    relation *current_rel = md_A->data[tmp_i];
-                    long val = 0;
-                    if (tmp_distinctA != 0 && current_rel->stats->distinct_values != 0) {
-                        val = my_pow(1 - (relA->stats->distinct_values / tmp_distinctA), current_rel->stats->approx_elements / current_rel->stats->distinct_values);
-                    }
-                    current_rel->stats->distinct_values *= (1 - val);
-                    current_rel->stats->approx_elements = relA->stats->approx_elements;
-                }
-            }
-            for (ssize_t tmp_i = 0 ; tmp_i < md_B->columns; tmp_i++) {
-                if (tmp_i != second_column) {
-                    relation *current_rel = md_B->data[tmp_i];
-                    long val = 0;
-                    if (tmp_distinctB != 0 && current_rel->stats->distinct_values != 0) {
-                        val = my_pow(1 - (relB->stats->distinct_values / tmp_distinctB), current_rel->stats->approx_elements / current_rel->stats->distinct_values);
-                    }
-                    current_rel->stats->distinct_values *= (1 - val);
-                    current_rel->stats->approx_elements = relB->stats->approx_elements;
-                }
-            }*/
        }
    }
 }

@@ -3,6 +3,8 @@
 #include "join.h"
 #include "quicksort.h"
 #include "stretchy_buffer.h"
+#include "utilities.h"
+#include "join_enumeration.h"
 
 typedef struct exec_query_args {
     query qry;
@@ -96,18 +98,21 @@ static ssize_t group_filters(query * qry) {
     }
     return index;         
 }
-
-void arrange_predicates(query *qry) {
+void print_predicates(predicate* predicates, size_t size);
+void arrange_predicates(query *qry, metadata *meta) {
 
     ssize_t index = group_filters(qry);
-    
-   // predicate *res = dp_linear(qry->relations_size, &(qry->predicates[index]), qry->predicates_size - index, meta);
 
-    //for (size_t i = index; i < qry->predicates_size; i++)
-  //  {
-      //  qry->predicates[i] = res[i-index];
-  //  }
-      // print_predicates(qry->predicates, qry->predicates_size);
+   //update_statistics(qry, meta);
+   int null_join = 0;
+   print_predicates(&(qry->predicates[index]), qry->predicates_size-index);
+   predicate *res = dp_linear(qry->relations_size, &(qry->predicates[index]), qry->predicates_size - index, meta, &null_join);
+
+    for (size_t i = index; i < qry->predicates_size; i++)
+   {
+       qry->predicates[i] = res[i-index];
+   }
+      print_predicates(qry->predicates, qry->predicates_size);
     
     
     
@@ -208,7 +213,7 @@ void print_select(relation_column* r_c, size_t size){
     void execute_queries(query *q_list, metadata *metadata_arr, thr_pool_t *pool) {
 
         #ifdef MULTITHREADING
-            thr_pool_t *inner_pool = thr_pool_create(4);
+            thr_pool_t *inner_pool = thr_pool_create(2);
         #else   
             thr_pool_t *inner_pool = NULL;
         #endif
@@ -228,8 +233,9 @@ void print_select(relation_column* r_c, size_t size){
         exec_query_args *args = (exec_query_args *) arg;
 
         query qry = args->qry;
+        metadata *meta = args->metadata_arr;
        
-        arrange_predicates(&qry);
+        arrange_predicates(&qry, meta);
         //print_predicates(qry.predicates, qry.predicates_size);
 
         mid_result **mid_results_array = NULL;
