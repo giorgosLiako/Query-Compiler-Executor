@@ -2,6 +2,7 @@
 #include "join_utilities.h"
 #include "stretchy_buffer.h"
 
+
 join_result scan_join(relation *relR, relation *relS) {
 
     join_result res;
@@ -23,6 +24,7 @@ join_result scan_join(relation *relR, relation *relS) {
     return res;
 
 }
+
 
 join_result join_relations_single_threaded(relation *relR, relation *relS) {
 
