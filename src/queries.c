@@ -217,7 +217,7 @@ void print_select(relation_column* r_c, size_t size){
 
     void execute_queries(query *q_list, metadata *metadata_arr, thr_pool_t *pool) {
 
-        #ifdef MULTITHREADING
+        #ifdef MULTITHREAD_SORT
             thr_pool_t *inner_pool = thr_pool_create(2);
         #else   
             thr_pool_t *inner_pool = NULL;
@@ -242,6 +242,10 @@ void print_select(relation_column* r_c, size_t size){
 
             execute_query(qry , metadata_arr, inner_pool);
         }
+
+        #ifdef MULTITHREAD_SORT
+            thr_pool_destroy(inner_pool);
+        #endif
     }
 #else
 
@@ -283,7 +287,11 @@ void print_select(relation_column* r_c, size_t size){
 
         exec_query_args **args_array = MALLOC(exec_query_args *, buf_len(q_list));
 
-        thr_pool_t *inner_pool = thr_pool_create(2);
+        #ifdef MULTITHREAD_SORT
+            thr_pool_t *inner_pool = thr_pool_create(2);
+        #else  
+            thr_pool_t *inner_pool = NULL;
+        #endif
 
         mid_result ***mid_results_arrays = MALLOC(mid_result **, buf_len(q_list));
 
@@ -304,7 +312,9 @@ void print_select(relation_column* r_c, size_t size){
         }       
         thr_pool_barrier(pool);
 
-        thr_pool_destroy(inner_pool);
+        #ifdef MULTITHREAD_SORT
+            thr_pool_destroy(inner_pool);
+        #endif
 
         for (size_t i = 0 ; i < buf_len(q_list) ; i++) {
             exec_query_args *args = args_array[i];
