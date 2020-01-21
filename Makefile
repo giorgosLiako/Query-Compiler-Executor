@@ -1,6 +1,10 @@
 #Makefile (project)
 
+<<<<<<< HEAD
 CFLAGS=-g3 -O2 -Wall -Wchkp -D_FORTIFY_SOURCE=2 $(OPTFLAGS)
+=======
+CFLAGS=-g3 -O2 -Wall -Wchkp -D_FORTIFY_SOURCE=2 -DMULTITHREAD_QUERIES -DMULTITHREAD_SORT_CALL  $(OPTFLAGS)
+>>>>>>> da026e069163d1ddae181d9f516660eac1bebc0b
 LDFLAGS=$(OPTLIBS)
 PREFIX?=/usr/local
 

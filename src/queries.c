@@ -3,6 +3,8 @@
 #include "join.h"
 #include "quicksort.h"
 #include "stretchy_buffer.h"
+#include "utilities.h"
+#include "join_enumeration.h"
 
 typedef struct exec_query_args {
     query qry;
@@ -96,19 +98,27 @@ static ssize_t group_filters(query * qry) {
     }
     return index;         
 }
-
-void arrange_predicates(query *qry) {
+void print_predicates(predicate* predicates, size_t size);
+void arrange_predicates(query *qry, metadata *meta, int *null_join) {
 
     ssize_t index = group_filters(qry);
     
-   // predicate *res = dp_linear(qry->relations_size, &(qry->predicates[index]), qry->predicates_size - index, meta);
-
-    //for (size_t i = index; i < qry->predicates_size; i++)
-  //  {
-      //  qry->predicates[i] = res[i-index];
-  //  }
-      // print_predicates(qry->predicates, qry->predicates_size);
+    //update_statistics(qry, meta);
+   //printf("->%lu %lu\n", index, qry->predicates_size);
+    //print_predicates(&(qry->predicates[index]), qry->predicates_size-index);
+    //predicate *res = dp_linear(qry->relations, qry->relations_size, &(qry->predicates[index]), qry->predicates_size - index, meta, null_join);
+    //if (*null_join) return;
     
+
+        //print_predicates(res, qry->predicates_size - index);
+    //// printf("->%lu %lu\n", index, qry->predicates_size);
+    //for (ssize_t i = index; i < qry->predicates_size; i++) {
+       // printf("..%lu\n", i - index);
+     //   qry->predicates[i] = res[i-index];
+    //}
+     //free(res);
+       // print_predicates(res, qry->predicates_size - index);
+        
     
     
 
@@ -216,7 +226,19 @@ void print_select(relation_column* r_c, size_t size){
         for (size_t i = 0; i < buf_len(q_list); i++) {
 
             query qry = q_list[i];
-            arrange_predicates(&qry);
+
+            int null_join = 0;
+            arrange_predicates(&qry, metadata_arr, &null_join);
+
+            if (null_join) {
+                for (size_t i = 0; i < qry.predicates_size; i++)
+                {
+                    printf("NULL ");
+                }
+                printf("\n");
+                continue;
+            }
+
 
             execute_query(qry , metadata_arr, inner_pool);
         }
@@ -228,9 +250,19 @@ void print_select(relation_column* r_c, size_t size){
         exec_query_args *args = (exec_query_args *) arg;
 
         query qry = args->qry;
+        metadata *meta = args->metadata_arr;
+        int null_join = 0;
        
-        arrange_predicates(&qry);
+        arrange_predicates(&qry, meta, &null_join);
         //print_predicates(qry.predicates, qry.predicates_size);
+        // if (null_join) {
+        //     for (size_t i = 0; i < predicate_size; i++)
+        //     {
+        //         printf("NULL ");
+        //     }
+        //     printf("\n");
+        //     return NULL;    
+        // }
 
         mid_result **mid_results_array = NULL;
 

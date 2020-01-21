@@ -24,5 +24,6 @@ queue* new_queue();
 char* pop(queue *);
 void push(queue *, char*);
 int q_size(queue *);
+void delete_queue(queue *q);
 
 #endif

@@ -6,7 +6,6 @@
 #include <sys/types.h>
 #include <semaphore.h>
 #include <unistd.h>
-#include "DArray.h"
 #include "structs.h"
 #include "utilities.h"
 

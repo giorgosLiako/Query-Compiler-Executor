@@ -42,21 +42,42 @@ q_node *BestTree_set(char *name, tree *tree, q_node *hashtab[HASHSIZE]) {
     if ((np = find(name, hashtab)) == NULL) { 
 
         np = (q_node *) malloc(sizeof(q_node));
-        if (np == NULL || (np->name = strdup(name)) == NULL) return NULL;
+        if (np == NULL) return NULL;
         
         hashval = hash(name);
         np->next = hashtab[hashval];
+        np->name = name;
         hashtab[hashval] = np;
 
     } else {
-
-        free((void *) np->tree); /*free previous tree */
+        free(name);
+        free(np->tree->preds);
+        for (size_t i = 0; i < np->tree->all_rel; i++)
+        {               
+            free(np->tree->stats[i]);
+        }
+        free(np->tree->rels);
+        free(np->tree->stats);
+        free(np->tree); /*free previous tree */
 
     }
 
-    if ((np->tree = create(tree)) == NULL) return NULL;
+    np->tree = tree;
 
     return np;
+}
+
+static void free_tree(tree *t){
+    //if (t->left != NULL) free_tree(t->left);
+    //if (t->right != NULL) free_tree(t->right);
+    free(t->preds);
+    free(t->rels);
+    for (size_t i = 0; i < t->all_rel; i++)
+    {
+        free(t->stats[i]);
+    }
+    free(t->stats);
+    free(t);
 }
 
 void BestTree_delete(q_node *hashtab[HASHSIZE]){
@@ -66,6 +87,8 @@ void BestTree_delete(q_node *hashtab[HASHSIZE]){
         for (np = hashtab[i]; np != NULL;){
             temp = np;
             np = np->next;
+            free_tree(temp->tree);
+            free(temp->name);
             free(temp);
         }
         hashtab[i] = NULL;

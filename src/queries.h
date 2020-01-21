@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include "alloc_free.h"
 #include "dbg.h"
-#include "DArray.h"
 #include "thr_pool.h"
 #include "structs.h"
 

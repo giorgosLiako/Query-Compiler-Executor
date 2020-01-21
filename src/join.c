@@ -2,6 +2,7 @@
 #include "join_utilities.h"
 #include "stretchy_buffer.h"
 
+
 join_result scan_join(relation *relR, relation *relS) {
 
     join_result res;
@@ -23,6 +24,7 @@ join_result scan_join(relation *relR, relation *relS) {
     return res;
 
 }
+
 
 join_result join_relations_single_threaded(relation *relR, relation *relS) {
 
@@ -220,6 +222,7 @@ void* iterative_sort_job(void *argm) {
     thr_pool_t *pool = arg->pool;
 
     iterative_sort(rel, queue, jobs_to_create, pool);
+    return NULL;
 }
 
 mid_result** execute_join(predicate *pred, uint32_t *relations, metadata *metadata_arr, mid_result **mid_results_array, thr_pool_t *pool) {

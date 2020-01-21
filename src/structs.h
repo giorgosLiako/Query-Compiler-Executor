@@ -1,9 +1,9 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "DArray.h"
 
 #define MAX_JOBS 4
 

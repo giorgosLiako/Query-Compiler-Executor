@@ -59,6 +59,7 @@ static void parse_predicates(char *string, query *q) {
             if (v1 == v3) {
                 /*Self join*/
                 predicates[i].type = 1;
+                printf("self join\n");
                 predicates[i].operator = SELF_JOIN;
             }
             predicates[i].type = 0;
