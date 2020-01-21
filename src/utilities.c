@@ -194,8 +194,8 @@ void update_statistics(query *qry, metadata *metadata_arr) {
             
             uint32_t row = qry->relations[current.first.relation];
             uint32_t column = current.first.column;
-            metadata *md = &(metadata_arr[row]);
-            relation *rel = md->data[column];
+            metadata md = metadata_arr[row];
+            relation *rel = md.data[column];
 
 
             bool found = false;
@@ -205,13 +205,13 @@ void update_statistics(query *qry, metadata *metadata_arr) {
             if (current.operator == EQ) {
                 uint64_t number = *(uint64_t *) current.second;
                             
-                if ( (number - rel->stats->min_value) <= rel->stats->array_size && rel->stats->array[number - rel->stats->min_value]) {
-                    rel->stats->approx_elements = approx_elements / rel->stats->distinct_values;
+                if ( (number - rel->stats->min_value >= 0) && (number - rel->stats->min_value < rel->stats->max_value) && rel->stats->array[number - rel->stats->min_value]) {
+                    rel->stats->approx_elements = approx_elements / (rel->stats->distinct_values+1);
                     rel->stats->distinct_values = 1;
-                    rel->stats->array_size = 1;
-                    FREE(rel->stats->array);
-                    rel->stats->array = MALLOC(bool, 1);
-                    rel->stats->array[0] = true;
+                    // rel->stats->array_size = 1;
+                    // FREE(rel->stats->array);
+                    // rel->stats->array = MALLOC(bool, 1);
+                    // rel->stats->array[0] = true;
                 }
                 else {
                     rel->stats->approx_elements = 0;
@@ -261,7 +261,7 @@ void update_statistics(query *qry, metadata *metadata_arr) {
             else if (current.operator == SELF_JOIN) {
                 relation_column rel_col = *(relation_column *) current.second;
                 
-                relation *relB = md->data[rel_col.column];
+                relation *relB = md.data[rel_col.column];
                 uint64_t max_valA = rel->stats->max_value;
                 uint64_t max_valB = relB->stats->max_value;
                 uint64_t min_valA = rel->stats->min_value;
@@ -280,19 +280,19 @@ void update_statistics(query *qry, metadata *metadata_arr) {
                 rel->stats->distinct_values = distinct_values * (1 - val);  
                 relB->stats->distinct_values = distinct_values * (1 - val);
 
-                for (ssize_t j = 0 ; j < md->columns ; j++) {
+                for (ssize_t j = 0 ; j < md.columns ; j++) {
                     if (j != column && j != rel_col.column) {
-                        uint64_t approx_tmp = md->data[j]->stats->approx_elements;
-                        uint64_t distinct_tmp = md->data[j]->stats->distinct_values;
+                        uint64_t approx_tmp = md.data[j]->stats->approx_elements;
+                        uint64_t distinct_tmp = md.data[j]->stats->distinct_values;
                         if (distinct_tmp != 0 && approx_elements != 0) {
                             val = my_pow(1 - rel->stats->approx_elements / approx_elements, approx_tmp / distinct_tmp);
-                            md->data[j]->stats->distinct_values *= (1 - val);
+                            md.data[j]->stats->distinct_values *= (1 - val);
                         }
-                        md->data[j]->stats->approx_elements = rel->stats->approx_elements;
+                        md.data[j]->stats->approx_elements = rel->stats->approx_elements;
                     }
                 }
             }
-            update_other_columns(column, approx_elements, md, rel);
+            update_other_columns(column, approx_elements, &md, rel);
        }
    }
 }

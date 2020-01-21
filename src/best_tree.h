@@ -3,6 +3,7 @@
 #include "join.h"
 
 typedef struct tree {
+    int all_rel;
     int type;
     int rel;
     int col;
