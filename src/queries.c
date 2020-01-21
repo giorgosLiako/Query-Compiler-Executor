@@ -61,6 +61,10 @@ static inline bool is_match(predicate *lhs, predicate *rhs) {
     return false;
 }
 
+static predicate *dp_linear(uint32_t *relations, int rel_size, predicate *predicates, int pred_size, const metadata *meta, int *null_join, ssize_t index) {
+    return 0;
+}
+
 static inline void group_matches(query *qry, ssize_t index) {
 
     for (ssize_t i = index ; i < (ssize_t) qry->predicates_size - 1 ; ) {
@@ -98,21 +102,14 @@ static ssize_t group_filters(query * qry) {
     }
     return index;         
 }
+
 void print_predicates(predicate* predicates, size_t size);
 void arrange_predicates(query *qry, metadata *meta, int *null_join) {
 
     ssize_t index = group_filters(qry);
+
+    dp_linear(qry->relations, qry->relations_size, &(qry->predicates[index]), qry->predicates_size - index, meta, null_join, index);
     
-    // update_statistics(qry, meta);
-    
-    // predicate *res = dp_linear(qry->relations, qry->relations_size, &(qry->predicates[index]), qry->predicates_size - index, meta, null_join, index);
-    
-    // for (ssize_t i = index; i < qry->predicates_size; i++) {
-    //    qry->predicates[i] = res[i-index];
-    // }
-    //print_predicates(qry->predicates, qry->predicates_size);
-    
-    //free(res);
 }
 
 static void print_sums(mid_result **mid_results_array, uint32_t *relations, metadata *metadata_arr, relation_column *selects, size_t select_size) {
@@ -245,15 +242,6 @@ void print_select(relation_column* r_c, size_t size){
         int null_join = 0;
        
         arrange_predicates(&qry, meta, &null_join);
-        //print_predicates(qry.predicates, qry.predicates_size);
-        // if (null_join) {
-        //     for (size_t i = 0; i < predicate_size; i++)
-        //     {
-        //         printf("NULL ");
-        //     }
-        //     printf("\n");
-        //     return NULL;    
-        // }
 
         mid_result **mid_results_array = NULL;
 

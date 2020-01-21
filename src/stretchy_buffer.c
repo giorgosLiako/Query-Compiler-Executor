@@ -14,7 +14,6 @@ void *buf__grow(const void *buf, size_t new_len, size_t elem_size) {
         new_hdr = malloc(new_size);
         new_hdr->len = 0;
     }
-    if (new_hdr == NULL) printf("GAMIETAI\n");
     new_hdr->cap = new_cap;
 
     return new_hdr->buf;

@@ -1,6 +1,8 @@
 #include "join_enumeration.h"
 #include "stretchy_buffer.h"
 
+#pragma GCC diagnostic ignored "-Wunused-function"
+
 
 //works for numbers smaller than 10
 char *to_string(int rel) {
@@ -57,11 +59,9 @@ void get_columns(int rel_a, int rel_b, predicate *predicates, int pred_size, pre
 
     for (size_t i = 0; i < pred_size; i++) {
         if (predicates[i].first.relation == rel_a && ((relation_column*)predicates[i].second)->relation == rel_b){
-            //printf("case 1\n");
             buf_push((*preds), &predicates[i]);
             buf_push((*inverted), 0);
         } else if (predicates[i].first.relation == rel_b && ((relation_column*)predicates[i].second)->relation == rel_a) {
-           // printf("case 2\n");
             buf_push((*preds), &predicates[i]);
             buf_push((*inverted), 1);
         }
@@ -70,13 +70,6 @@ void get_columns(int rel_a, int rel_b, predicate *predicates, int pred_size, pre
 }
 
  void calculate_statistics(int rel_a, int rel_b, int col_a, int col_b, statistics **stats, statistics *stat) {
-    // printf("%ld %ld %ld %ld\n", rel_a, col_a, rel_b, col_b);
-    // printf("%ld %ld %ld %ld\n", stats[rel_a][col_a].min_value, stats[rel_a][col_a].max_value, stats[rel_b][col_b].min_value, stats[rel_b][col_b].max_value);
-//    if (stats[rel_a][col_a].min_value > stats[rel_b][col_b].max_value ||
-//         stats[rel_b][col_b].min_value > stats[rel_a][col_a].max_value) {
-//             stat->approx_elements = -1;
-//             return;
-//         }
 
     if (stats[rel_a][col_a].min_value > stats[rel_b][col_b].min_value) stat->min_value = stats[rel_a][col_a].min_value;
     else stat->min_value = stats[rel_b][col_b].min_value;
@@ -93,8 +86,6 @@ void get_columns(int rel_a, int rel_b, predicate *predicates, int pred_size, pre
 }
 
 void free_tree(tree *t){
-    //if (t->left != NULL) free_tree(t->left);
-    //if (t->right != NULL) free_tree(t->right);
     free(t->preds);
     free(t->rels);
     for (size_t i = 0; i < t->all_rel; i++)
@@ -362,7 +353,7 @@ int cost(tree *t){
 }
 
 
-predicate *dp_linear(uint32_t *relations, int rel_size, predicate *predicates, int pred_size, const metadata *meta, int *null_join, ssize_t index){
+static predicate *dp_linear(uint32_t *relations, int rel_size, predicate *predicates, int pred_size, const metadata *meta, int *null_join, ssize_t index){
     q_node *hashtab[101];
     for (size_t i = 0; i < 101; i++)
     {
