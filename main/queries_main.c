@@ -48,7 +48,11 @@ int main() {
     check_mem(metadata_arr);
 
     #ifdef MULTITHREAD_QUERIES 
-        thr_pool_t *pool = thr_pool_create(2);
+        #ifdef MULTITHREAD_SORT
+            thr_pool_t *pool = thr_pool_create(2);
+        #else
+            thr_pool_t *pool = thr_pool_create(3);
+        #endif
     #else
         thr_pool_t *pool = NULL;
     #endif

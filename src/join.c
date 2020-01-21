@@ -2,7 +2,6 @@
 #include "join_utilities.h"
 #include "stretchy_buffer.h"
 
-
 join_result scan_join(relation *relR, relation *relS) {
 
     join_result res;
@@ -24,7 +23,6 @@ join_result scan_join(relation *relR, relation *relS) {
     return res;
 
 }
-
 
 join_result join_relations_single_threaded(relation *relR, relation *relS) {
 
@@ -52,6 +50,7 @@ join_result join_relations_single_threaded(relation *relR, relation *relS) {
                 }
             }
             else {
+                
                 buf_push(results_r, relR->tuples[pr].payload);
                 buf_push(results_s, relS->tuples[ps].payload);
 
@@ -287,6 +286,7 @@ mid_result** execute_join(predicate *pred, uint32_t *relations, metadata *metada
             thr_pool_barrier(temp_pool);
 
             thr_pool_destroy(temp_pool);
+            FREE(args);
         }
         else if (retval == SCAN_JOIN) {
             rel[0]->queue = NULL;

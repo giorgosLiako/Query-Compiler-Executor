@@ -208,10 +208,10 @@ void update_statistics(query *qry, metadata *metadata_arr) {
                 if ( (number - rel->stats->min_value >= 0) && (number - rel->stats->min_value < rel->stats->max_value) && rel->stats->array[number - rel->stats->min_value]) {
                     rel->stats->approx_elements = approx_elements / (rel->stats->distinct_values+1);
                     rel->stats->distinct_values = 1;
-                    // rel->stats->array_size = 1;
-                    // FREE(rel->stats->array);
-                    // rel->stats->array = MALLOC(bool, 1);
-                    // rel->stats->array[0] = true;
+                    rel->stats->array_size = 1;
+                    FREE(rel->stats->array);
+                    rel->stats->array = MALLOC(bool, 1);
+                    rel->stats->array[0] = true;
                 }
                 else {
                     rel->stats->approx_elements = 0;

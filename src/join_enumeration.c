@@ -53,16 +53,16 @@ char *append_string(int rel, char* str) {
     
 }
 
-void get_columns(int rel_a, int rel_b, predicate *predicates, int pred_size, predicate **preds, int **inverted) {
+void get_columns(int rel_a, int rel_b, predicate *predicates, int pred_size, predicate ***preds, int **inverted) {
 
     for (size_t i = 0; i < pred_size; i++) {
         if (predicates[i].first.relation == rel_a && ((relation_column*)predicates[i].second)->relation == rel_b){
             //printf("case 1\n");
-            buf_push((*preds), predicates[i]);
+            buf_push((*preds), &predicates[i]);
             buf_push((*inverted), 0);
         } else if (predicates[i].first.relation == rel_b && ((relation_column*)predicates[i].second)->relation == rel_a) {
            // printf("case 2\n");
-            buf_push((*preds), predicates[i]);
+            buf_push((*preds), &predicates[i]);
             buf_push((*inverted), 1);
         }
     }
@@ -84,11 +84,11 @@ void get_columns(int rel_a, int rel_b, predicate *predicates, int pred_size, pre
     if (stats[rel_a][col_a].max_value < stats[rel_b][col_b].max_value) stat->max_value = stats[rel_a][col_a].max_value;
     else stat->max_value = stats[rel_b][col_b].max_value;
 
-    int f_a, f_b;
+    uint64_t f_a, f_b;
     f_a = ((stat->max_value - stat->min_value) * stats[rel_a][col_a].approx_elements)/(stats[rel_a][col_a].max_value - stats[rel_a][col_a].min_value + 1);
     f_b = ((stat->max_value - stat->min_value) * stats[rel_b][col_b].approx_elements)/(stats[rel_b][col_b].max_value - stats[rel_b][col_b].min_value + 1);
 
-    int n = stat->max_value - stat->min_value + 1;
+    uint64_t n = stat->max_value - stat->min_value + 1;
     stat->approx_elements = (f_a*f_b)/n;
 }
 
@@ -131,7 +131,6 @@ tree *to_tree(int rel,const metadata *meta, uint32_t *relations, int relation_si
     for (size_t i = 0; i < relation_size; i++){
         new->stats[i] = NULL;
     }
-    
 
 
     metadata current_stat = meta[relations[rel]];
@@ -223,7 +222,7 @@ tree *create_join_tree(tree *t, int rel, const metadata *meta, int *flag, uint32
         int rel_b = rel;
 
         //find the predicates in which rel_a and rel_b participate
-        predicate *preds = NULL;
+        predicate **preds = NULL;
         int *inverted = NULL;
         get_columns(rel_a, rel_b, all_predicates, predicate_size, &preds, &inverted);
 
@@ -238,7 +237,7 @@ tree *create_join_tree(tree *t, int rel, const metadata *meta, int *flag, uint32
         for (size_t j = 0; j < buf_len(preds); j++) {
             int col_a, col_b;
 
-            predicate *pred = &(preds[j]);
+            predicate *pred = preds[j];
             if (inverted[j]){
                 col_b = pred->first.column;
                 col_a = ((relation_column*) pred->second)->column;
@@ -282,8 +281,12 @@ tree *create_join_tree(tree *t, int rel, const metadata *meta, int *flag, uint32
             best_col_b = t_best_col_b;
             best_stat_all = best_stat;
             best_pred_all = best_pred;
-        }   
-    }
+        }
+        buf_free(preds);
+        buf_free(inverted);  
+    } 
+
+    
     //SOMETHING WENT REALLY WRONG
     if (best_rel_a == -1) return NULL;
     
@@ -299,8 +302,8 @@ tree *create_join_tree(tree *t, int rel, const metadata *meta, int *flag, uint32
 
         if (n_tree->stats[i] == NULL) continue;
         
-        metadata md_a = meta[relations[i]];
-        for (size_t j = 0; j < md_a.columns; j++) {
+        //metadata md_a = meta[relations[i]];
+        for (size_t j = 0; j < meta[relations[i]].columns; j++) {
             if ((i == best_rel_a && j == best_col_a) ||
                 (i == best_rel_b && j == best_col_b)) {
                     continue;
@@ -355,12 +358,11 @@ int connected(char *str, int rel, int** graph) {
 
 
 int cost(tree *t){
-    //printf("cost ->%d \n", t->stats[0][0].approx_elements);
     return t->stats[t->rel][t->col].approx_elements;
 }
 
 
-predicate *dp_linear(uint32_t *relations, int rel_size, predicate *predicates, int pred_size, const metadata *meta, int *null_join){
+predicate *dp_linear(uint32_t *relations, int rel_size, predicate *predicates, int pred_size, const metadata *meta, int *null_join, ssize_t index){
     q_node *hashtab[101];
     for (size_t i = 0; i < 101; i++)
     {
@@ -369,7 +371,7 @@ predicate *dp_linear(uint32_t *relations, int rel_size, predicate *predicates, i
     
     queue *set = new_queue();
     int **graph = predicate_graph(predicates, pred_size, rel_size);
-    //set_up_statistics(rel_size, meta);
+    
     int flag = 0;
 
     for (size_t i = 0; i < rel_size; i++) {
@@ -379,17 +381,17 @@ predicate *dp_linear(uint32_t *relations, int rel_size, predicate *predicates, i
     }
 
     for (size_t i = 0; i < rel_size - 1; i++) {
-        //printf("----------------------\n");
+        
         int set_size = q_size(set);
-        //printf("set size %d\n", set_size);
+        
         for (size_t j = 0; j < set_size; j++) {
             char* old_set = pop(set);
-            //char* set_compare = copy_string(old_set);
+            
 
             for (size_t k = 0; k < rel_size; k++) {
-                //printf("old set %s new relation %ld\n", old_set, k);
+                
                 if (!in_string(old_set, k) && connected(old_set, k, graph)) {
-                    //printf("%s %ld\n", old_set, k);
+                    
                     tree *curr_tree = create_join_tree(BestTree(old_set, hashtab), k, meta, &flag, relations, rel_size, predicates, pred_size, graph);
                     if (flag) {
                         printf("    nulll");
@@ -397,10 +399,7 @@ predicate *dp_linear(uint32_t *relations, int rel_size, predicate *predicates, i
                         return NULL;
                     }
                     char *new_set = append_string(k, old_set);
-                    //printf("new set %s\n", new_set);
                     
-                    //printf("%s %d\n", new_set, cost(curr_tree));
-                    //printf("~\n");
                     if (BestTree(new_set, hashtab) == NULL || cost(BestTree(new_set, hashtab)) > cost(curr_tree)){
                         
                         if (BestTree(new_set, hashtab) == NULL) push(set, copy_string(new_set));
@@ -418,8 +417,7 @@ predicate *dp_linear(uint32_t *relations, int rel_size, predicate *predicates, i
         
     }
     char* res = pop(set);
-    //printf("result :%s cost :%d\n", res, cost(BestTree(res, hashtab)));
-   // print_predicates(BestTree(res)->preds, predicate_size);
+    
     delete_queue(set);
     for (size_t i = 0; i < rel_size; i++) {
         free(graph[i]);
@@ -435,10 +433,14 @@ predicate *dp_linear(uint32_t *relations, int rel_size, predicate *predicates, i
         ((relation_column*)result[i].second)->column = ((relation_column*)tmp[i].second)->column;
         ((relation_column*)result[i].second)->relation = ((relation_column*)tmp[i].second)->relation;
     }
+    for (size_t i = 0; i < index; i++)
+    {
+        FREE(tmp[i].second);
+    }
+    
     BestTree_delete(hashtab);
     free(res);
 
     return result;
     
 }
-//&& connected(set, relations[k])
